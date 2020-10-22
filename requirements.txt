@@ -1,4 +1,5 @@
 absl-py==0.10.0
+autopep8==1.5.4
 cachetools==4.1.1
 certifi==2020.6.20
 chardet==3.0.4
@@ -20,6 +21,7 @@ pkg-resources==0.0.0
 protobuf==3.13.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
+pycodestyle==2.6.0
 pyparsing==2.4.7
 python-dateutil==2.8.1
 pytorch-lightning==1.0.3
@@ -30,6 +32,7 @@ rsa==4.6
 six==1.15.0
 tensorboard==2.3.0
 tensorboard-plugin-wit==1.7.0
+toml==0.10.1
 torch==1.6.0
 torchvision==0.7.0
 tqdm==4.50.2
