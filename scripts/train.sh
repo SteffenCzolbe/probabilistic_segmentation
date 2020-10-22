@@ -1,0 +1,1 @@
+python3 -m src.train --gpus 0,1 --model softm 
