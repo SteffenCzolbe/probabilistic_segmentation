@@ -3,15 +3,12 @@ from argparse import ArgumentParser
 
 from src.lightning_models.softmax_output import SoftmaxOutput
 from src.datamodels.lidc_datamodule import LIDCDataModule
+import src.util as util
 
 
 def cli_main():
     pl.seed_everything(1234)
-    supported_models = [SoftmaxOutput]
-
-    # remap supported models to dict
-    supported_models = dict([(model.model_shortname(), model)
-                             for model in supported_models])
+    supported_models = util.get_supported_models()
 
     # ------------
     # args
