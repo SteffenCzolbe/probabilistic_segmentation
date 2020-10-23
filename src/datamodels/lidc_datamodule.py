@@ -132,7 +132,13 @@ class LIDCDataset(Dataset):
 
 
 if __name__ == '__main__':
-    dm = LIDCDataModule(separate_multiple_annotations=True)
-    ds = dm.train_dataloader()
-    print(ds.dataset.data[0])
-    print(ds.dataset[0])
+    dm = LIDCDataModule(separate_multiple_annotations=False)
+    ds = dm.test_dataloader()
+    print(ds.dataset.data[122])
+    sample = ds.dataset[122]
+
+    print(sample[0].shape)
+    print(sample[1][0].shape)
+
+    from torchvision.utils import save_image
+    save_image(sample[0], 'test.png')
