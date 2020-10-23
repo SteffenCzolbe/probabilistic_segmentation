@@ -48,14 +48,37 @@ class SoftmaxOutput(pl.LightningModule):
     def model_shortname():
         return 'softm'
 
-    def pixel_wise_probabaility(self, batch, sample_cnt=None):
-        raise NotImplementedError()
+    def pixel_wise_probabaility(self, x, sample_cnt=None):
+        """return the pixel-wise probability map
 
-    def pixel_wise_uncertainty(self, batch, sample_cnt=None):
-        raise NotImplementedError()
+        Args:
+            x: the input
+            sample_cnt (optional): Amount of samples to draw for internal approximation
 
-    def sample_prediction(self, batch):
-        raise NotImplementedError()
+        Returns:
+            tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
+        """
+        y = self.forward(x)
+        return F.softmax(y, dim=1)
+
+    def pixel_wise_uncertainty(self, x, sample_cnt=None):
+        """return the pixel-wise entropy
+
+        Args:
+            x: the input
+            sample_cnt (optional): Amount of samples to draw for internal approximation
+
+        Returns:
+            tensor: B x 1 x H x W
+        """
+        p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
+        h = torch.sum(-p * torch.log(p), dim=1, keepdim=True)
+        return h
+
+    def sample_prediction(self, x):
+        y = self.forward(x)
+        _, pred = y.max(dim=1, keepdim=True)
+        return pred
 
     @staticmethod
     def add_model_specific_args(parent_parser):
