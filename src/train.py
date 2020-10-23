@@ -2,23 +2,27 @@ import pytorch_lightning as pl
 from argparse import ArgumentParser
 
 from src.lightning_models.softmax_output import SoftmaxOutput
-from src.datamodels.lidc_datamodel import LIDCDataModule
+from src.datamodels.lidc_datamodule import LIDCDataModule
 
 
 def cli_main():
     pl.seed_everything(1234)
     supported_models = [SoftmaxOutput]
-    
+
     # remap supported models to dict
-    supported_models = dict([(model.model_shortname(), model) for model in supported_models])
+    supported_models = dict([(model.model_shortname(), model)
+                             for model in supported_models])
 
     # ------------
     # args
     # ------------
     parser = ArgumentParser()
-    parser.add_argument('--model', type=str, help=f'Model architecute. Options: {list(supported_models.keys())}')
-    parser.add_argument('--batch_size', default=64, type=int, help='Batchsize. Default 64.')
-    parser.add_argument('--learning_rate', default=0.0001, type=float, help='Learning rate. Default 0.0001')
+    parser.add_argument(
+        '--model', type=str, help=f'Model architecute. Options: {list(supported_models.keys())}')
+    parser.add_argument('--batch_size', default=64,
+                        type=int, help='Batchsize. Default 64.')
+    parser.add_argument('--learning_rate', default=0.0001,
+                        type=float, help='Learning rate. Default 0.0001')
     parser = pl.Trainer.add_argparse_args(parser)
     for model in supported_models.values():
         parser = model.add_model_specific_args(parser)
