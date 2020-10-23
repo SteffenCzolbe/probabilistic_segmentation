@@ -18,12 +18,6 @@ class SoftmaxOutput(pl.LightningModule):
     def forward(self, x):
         return self.unet(x)
 
-    def pixel_wise_uncertainty(self, batch):
-        raise NotImplementedError()
-
-    def sample_prediction(self, batch):
-        raise NotImplementedError()
-
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
@@ -53,6 +47,15 @@ class SoftmaxOutput(pl.LightningModule):
     @staticmethod
     def model_shortname():
         return 'softm'
+
+    def pixel_wise_probabaility(self, batch, sample_cnt=None):
+        raise NotImplementedError()
+
+    def pixel_wise_uncertainty(self, batch, sample_cnt=None):
+        raise NotImplementedError()
+
+    def sample_prediction(self, batch):
+        raise NotImplementedError()
 
     @staticmethod
     def add_model_specific_args(parent_parser):
