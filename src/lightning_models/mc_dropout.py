@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from src.networks.unet import Unet
 
 
-class MCMCDropout(pl.LightningModule):
+class MCDropout(pl.LightningModule):
     def __init__(self, hparms):
         super().__init__()
         self.save_hyperparameters(hparms)
