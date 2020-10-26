@@ -51,7 +51,7 @@ class UpConvBlock(nn.Module):
             upconv_layer = []
             upconv_layer.append(nn.Dropout2d(p=p))
             upconv_layer.append(nn.ConvTranspose2d(input_dim, output_dim, kernel_size=2, stride=2))
-            self.upconv_layer = upconv_layer
+            self.upconv_layer = nn.Sequential(*upconv_layer)
 
         self.conv_block = DownConvBlock(
             input_dim, output_dim, padding, pool=False, p=p)
