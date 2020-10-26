@@ -46,7 +46,7 @@ def cli_main():
     # ------------
     # testing
     # ------------
-    trainer.test(test_dataloaders=test_loader)
+    trainer.test((model, dataset)
 
 
 if __name__ == '__main__':
