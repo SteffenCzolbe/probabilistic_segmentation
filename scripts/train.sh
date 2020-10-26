@@ -1,1 +1,1 @@
-python3 -m src.train --gpus 0,1 --model softm --num_filters 32 64 128 192
+python3 -m src.train --gpus 0,1 --model softm --num_filters 32 64 128 192 --max_epochs 60
