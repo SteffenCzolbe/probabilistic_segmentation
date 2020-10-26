@@ -63,7 +63,6 @@ class UpConvBlock(nn.Module):
         else:
             up = self.upconv_layer(x)
 
-        assert up.shape[3] == bridge.shape[3]
         out = torch.cat([up, bridge], 1)
         out = self.conv_block(out)
 
