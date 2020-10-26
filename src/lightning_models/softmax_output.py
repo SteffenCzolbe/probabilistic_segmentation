@@ -22,20 +22,20 @@ class SoftmaxOutput(pl.LightningModule):
         x, y = batch
         y_hat = self(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
-        self.log('train_loss', loss)
+        self.log('train/loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
-        self.log('val_loss', loss)
+        self.log('val/loss', loss)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
-        self.log('test_loss', loss)
+        self.log('test/loss', loss)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)

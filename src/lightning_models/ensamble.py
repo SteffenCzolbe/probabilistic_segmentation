@@ -19,7 +19,7 @@ class Ensamble(pl.LightningModule):
         y_hat = self(x)
         loss = None
         raise NotImplementedError()
-        self.log('train_loss', loss)
+        self.log('train/loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -27,14 +27,14 @@ class Ensamble(pl.LightningModule):
         y_hat = self(x)
         raise NotImplementedError()
         loss = None
-        self.log('val_loss', loss)
+        self.log('val/loss', loss)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
         loss = None
         raise NotImplementedError()
-        self.log('test_loss', loss)
+        self.log('test/loss', loss)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
