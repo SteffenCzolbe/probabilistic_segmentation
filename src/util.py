@@ -17,8 +17,9 @@ def to_device(obj, device):
 def get_supported_models():
     from src.lightning_models.softmax_output import SoftmaxOutput
     from src.lightning_models.mc_dropout import MCDropout
+    from src.lightning_models.probabilistic_unet import ProbUnet
 
-    supported_models = [SoftmaxOutput, MCDropout]
+    supported_models = [SoftmaxOutput, MCDropout, ProbUnet]
 
     # remap supported models to dict
     supported_models = dict([(model.model_shortname(), model)
