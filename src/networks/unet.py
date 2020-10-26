@@ -12,7 +12,7 @@ class Unet(nn.Module):
     padidng: Boolean, if true we pad the images with 1 so that we keep the same dimensions
     """
 
-    def __init__(self, input_channels, num_classes, num_filters, apply_last_layer=True, padding=True):
+    def __init__(self, input_channels, num_classes, num_filters, apply_last_layer=True, padding=True, p=0):
         super(Unet, self).__init__()
         self.input_channels = input_channels
         self.num_classes = num_classes
@@ -30,17 +30,20 @@ class Unet(nn.Module):
             else:
                 pool = True
             self.contracting_path.append(
-                DownConvBlock(input, output, padding, pool=pool))
+                DownConvBlock(input, output, padding, pool=pool, p=p))
 
         self.upsampling_path = nn.ModuleList()
         n = len(self.num_filters) - 2
         for i in range(n, -1, -1):
             input = output + self.num_filters[i]
             output = self.num_filters[i]
-            self.upsampling_path.append(UpConvBlock(input, output, padding))
+            self.upsampling_path.append(UpConvBlock(input, output, padding, p))
 
         if self.apply_last_layer:
-            self.last_layer = nn.Conv2d(output, num_classes, kernel_size=1)
+            last_layer = []
+            last_layer.append(nn.Dropout2d(p=p))
+            last_layer.append(nn.Conv2d(output, num_classes, kernel_size=1)) 
+            self.last_layer = last_layer
 
     def forward(self, x):
         blocks = []

@@ -9,20 +9,24 @@ class DownConvBlock(nn.Module):
     Between each block we add a pooling operation.
     """
 
-    def __init__(self, input_dim, output_dim, padding, pool=True):
+    def __init__(self, input_dim, output_dim, padding, pool=True, p=0):
         super(DownConvBlock, self).__init__()
         layers = []
 
         if pool:
+            layers.append(nn.Dropout2d(p=p))
             layers.append(nn.AvgPool2d(
                 kernel_size=2, stride=2, padding=0, ceil_mode=True))
 
+        layers.append(nn.Dropout2d(p=p))
         layers.append(nn.Conv2d(input_dim, output_dim,
                                 kernel_size=3, stride=1, padding=int(padding)))
         layers.append(nn.ReLU(inplace=True))
+        layers.append(nn.Dropout2d(p=p))
         layers.append(nn.Conv2d(output_dim, output_dim,
                                 kernel_size=3, stride=1, padding=int(padding)))
         layers.append(nn.ReLU(inplace=True))
+        layers.append(nn.Dropout2d(p=p))
         layers.append(nn.Conv2d(output_dim, output_dim,
                                 kernel_size=3, stride=1, padding=int(padding)))
         layers.append(nn.ReLU(inplace=True))
@@ -39,16 +43,18 @@ class UpConvBlock(nn.Module):
     If bilinear is set to false, we do a transposed convolution instead of upsampling
     """
 
-    def __init__(self, input_dim, output_dim, padding, bilinear=True):
+    def __init__(self, input_dim, output_dim, padding, bilinear=True, p=0):
         super(UpConvBlock, self).__init__()
         self.bilinear = bilinear
 
         if not self.bilinear:
-            self.upconv_layer = nn.ConvTranspose2d(
-                input_dim, output_dim, kernel_size=2, stride=2)
+            upconv_layer = []
+            upconv_layer.append(nn.Dropout2d(p=p))
+            upconv_layer.append(nn.ConvTranspose2d(input_dim, output_dim, kernel_size=2, stride=2))
+            self.upconv_layer = upconv_layer
 
         self.conv_block = DownConvBlock(
-            input_dim, output_dim, padding, pool=False)
+            input_dim, output_dim, padding, pool=False, p=p)
 
     def forward(self, x, bridge):
         if self.bilinear:
