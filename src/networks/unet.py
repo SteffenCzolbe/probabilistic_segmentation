@@ -37,13 +37,13 @@ class Unet(nn.Module):
         for i in range(n, -1, -1):
             input = output + self.num_filters[i]
             output = self.num_filters[i]
-            self.upsampling_path.append(UpConvBlock(input, output, padding, p))
+            self.upsampling_path.append(UpConvBlock(input, output, padding, p=p))
 
         if self.apply_last_layer:
             last_layer = []
             last_layer.append(nn.Dropout2d(p=p))
             last_layer.append(nn.Conv2d(output, num_classes, kernel_size=1)) 
-            self.last_layer = last_layer
+            self.last_layer = nn.Sequential(*last_layer)
 
     def forward(self, x):
         blocks = []
