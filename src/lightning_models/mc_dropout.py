@@ -41,13 +41,15 @@ class MCDropout(pl.LightningModule):
 
     @staticmethod
     def model_name():
-        raise NotImplementedError()
         return ''
 
     @staticmethod
     def model_shortname():
-        raise NotImplementedError()
         return ''
+
+    @staticmethod
+    def train_dataset_annotaters_separated():
+        return True
 
     def pixel_wise_probabaility(self, x, sample_cnt=None):
         """return the pixel-wise probability map
@@ -83,5 +85,4 @@ class MCDropout(pl.LightningModule):
         parser.add_argument('--num_filters', type=int, nargs='+', default=[
                             32, 64, 128, 192], help='Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192')
         parser.add_argument('--learning_rate', type=float, default=0.0001)
-        raise NotImplementedError()
         return parser

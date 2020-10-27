@@ -48,6 +48,10 @@ class SoftmaxOutput(pl.LightningModule):
     def model_shortname():
         return 'softm'
 
+    @staticmethod
+    def train_dataset_annotaters_separated():
+        return True
+
     def pixel_wise_probabaility(self, x, sample_cnt=None):
         """return the pixel-wise probability map
 

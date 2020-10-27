@@ -59,6 +59,10 @@ class ProbUnet(pl.LightningModule):
     def model_shortname():
         return 'punet'
 
+    @staticmethod
+    def train_dataset_annotaters_separated():
+        return True
+
     def pixel_wise_probabaility(self, x, sample_cnt=16):
         """return the pixel-wise probability map
 

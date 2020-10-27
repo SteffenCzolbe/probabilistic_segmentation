@@ -49,6 +49,10 @@ class Ensamble(pl.LightningModule):
         raise NotImplementedError()
         return ''
 
+    @staticmethod
+    def train_dataset_annotaters_separated():
+        return False
+
     def pixel_wise_probabaility(self, x, sample_cnt=None):
         """return the pixel-wise probability map
 

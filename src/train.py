@@ -28,7 +28,10 @@ def cli_main():
     # ------------
     # data
     # ------------
-    dataset = LIDCDataModule()
+    dataset_mode = supported_models[args.model].train_dataset_annotaters_separated(
+    )
+    dataset = LIDCDataModule(separate_multiple_annotations=dataset_mode)
+    args.data_dims = dataset.dims
 
     # ------------
     # model
