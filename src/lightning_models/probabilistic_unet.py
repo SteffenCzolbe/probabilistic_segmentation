@@ -14,7 +14,7 @@ class ProbUnet(pl.LightningModule):
         # make sure hparams is a dict from here on. Sadly pytrorch lightning is inconsistent, and passes us a namespace when training, but a dict when loading from save :/
         if isinstance(hparms, Namespace):
             hparms = vars(hparms)
-        self.punet = ProbabilisticUnet(input_channels=1,
+        self.punet = ProbabilisticUnet(data_dims=hparms['data_dims'],
                                        num_classes=2,
                                        num_filters=hparms['num_filters'],
                                        latent_dim=hparms['latent_space_dim'],
