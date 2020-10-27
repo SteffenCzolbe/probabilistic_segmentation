@@ -7,9 +7,9 @@ from src.networks.unet import Unet
 
 
 class MCDropout(pl.LightningModule):
-    def __init__(self, hparms):
+    def __init__(self, hparams):
         super().__init__()
-        self.save_hyperparameters(hparms)
+        self.save_hyperparameters(hparams)
 
     def forward(self, x):
         raise NotImplementedError()

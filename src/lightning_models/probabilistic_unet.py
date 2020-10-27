@@ -7,16 +7,16 @@ from src.networks.probabilistic_unet import ProbabilisticUnet
 
 
 class ProbUnet(pl.LightningModule):
-    def __init__(self, hparms):
+    def __init__(self, hparams):
         super().__init__()
-        self.save_hyperparameters(hparms)
+        self.save_hyperparameters(hparams)
 
-        self.punet = ProbabilisticUnet(data_dims=self.hparams.hparms.data_dims,
+        self.punet = ProbabilisticUnet(data_dims=self.hparams.data_dims,
                                        num_classes=2,
-                                       num_filters=self.hparms.num_filters,
-                                       latent_dim=self.hparms.latent_space_dim,
+                                       num_filters=self.hparams.num_filters,
+                                       latent_dim=self.hparams.latent_space_dim,
                                        no_fcomb_layers=4,
-                                       beta=self.hparms.beta)
+                                       beta=self.hparams.beta)
 
     def forward(self, x):
         return self.punet(x)
