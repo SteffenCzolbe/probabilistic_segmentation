@@ -152,7 +152,19 @@ class ProbabilisticUnet(nn.Module):
 
         # reconstruct image
         self.y_hat_raw = self.fcomb(self.unet_features, self.z)
-        y_hat = F.sigmoid(self.y_hat_raw)
+        y_hat = torch.sigmoid(self.y_hat_raw)
+
+        return y_hat
+
+    def resample(self):
+        """
+        resamples a prediction based on inputs from the previous forward pass.
+        """
+        # propagate networks
+        self.z = self.prior_latent_distribution.sample()
+        # reconstruct image
+        self.y_hat_raw = self.fcomb(self.unet_features, self.z)
+        y_hat = torch.sigmoid(self.y_hat_raw)
 
         return y_hat
 

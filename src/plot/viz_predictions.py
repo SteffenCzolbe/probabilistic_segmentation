@@ -5,11 +5,12 @@ import torch
 import yaml
 import os
 import glob
+import re
 
 
 def set_up_figure(model_cnt, sample):
     fig = Fig(rows=1+model_cnt, cols=7,
-              title="Model Predictions", figsize=None)
+              title="Model Predictions", figsize=None, background=True)
     fig.plot_img(0, 0, sample[0], title='Image', vmin=0, vmax=1)
 
     fig.plot_img(0, 1, sample[1][0], title='l_0', vmin=0, vmax=1)
@@ -28,6 +29,12 @@ def load_sample(sample_indx):
 
 
 def load_model(model_path):
+    def find_checkpoints():
+        files = []
+        for fname in glob.glob(os.path.join(model_path, 'checkpoints', '*')):
+            if re.match(r".*/epoch=[0-9]+.ckpt", fname):
+                files.append(fname)
+        return files
     # read config
     with open(os.path.join(model_path, 'hparams.yaml')) as f:
         hparams = yaml.load(f, Loader=yaml.Loader)
@@ -35,29 +42,34 @@ def load_model(model_path):
 
     # load model
     model_class = util.get_supported_models()[model_type]
-    checkpoints = glob.glob(os.path.join(model_path, 'checkpoints', '*'))
-    assert len(checkpoints) == 1, "multiple checkpoints detected!"
+    checkpoints = find_checkpoints()
+    assert len(
+        checkpoints) == 1, f"multiple checkpoints detected!: {checkpoints}"
     model = model_class.load_from_checkpoint(
         checkpoint_path=checkpoints[0])
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model.to(device)
+    model.eval()
     return model
 
 
 def predict(model, x):
-    predictions = []
-    # draw 4 predictions
-    for i in range(4):
-        pred = model.sample_prediction(x.unsqueeze(0)).squeeze(0)
+    with torch.no_grad():
+        predictions = []
+        # draw 4 predictions
+        for i in range(4):
+            pred = model.sample_prediction(x.unsqueeze(0)).squeeze(0)
+            predictions.append(pred)
+
+        # pixel-wise probability
+        pred = model.pixel_wise_probabaility(
+            x.unsqueeze(0), sample_cnt=16).squeeze(0)[[1]]
         predictions.append(pred)
 
-    # pixel-wise probability
-    pred = model.pixel_wise_probabaility(x.unsqueeze(0)).squeeze(0)[[1]]
-    predictions.append(pred)
-
-    # uncertainty
-    pred = model.pixel_wise_uncertainty(x.unsqueeze(0)).squeeze(0)
-    predictions.append(pred)
+        # uncertainty
+        pred = model.pixel_wise_uncertainty(
+            x.unsqueeze(0), sample_cnt=16).squeeze(0)
+        predictions.append(pred)
 
     return predictions
 
@@ -82,5 +94,7 @@ def make_fig(model_checkpoints):
 
 
 if __name__ == '__main__':
-    model_checkpoints = ['./trained_models/softmax']
+    # './trained_models/softmax',
+    model_checkpoints = ['./lightning_logs/version_0', './lightning_logs/version_2',
+                         './lightning_logs/version_4', './lightning_logs/version_6', './lightning_logs/version_8']
     make_fig(model_checkpoints)

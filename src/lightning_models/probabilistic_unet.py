@@ -1,6 +1,6 @@
 import torch
 import pytorch_lightning as pl
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 import torch.nn.functional as F
 
 from src.networks.probabilistic_unet import ProbabilisticUnet
@@ -10,12 +10,16 @@ class ProbUnet(pl.LightningModule):
     def __init__(self, hparms):
         super().__init__()
         self.save_hyperparameters(hparms)
+
+        # make sure hparams is a dict from here on. Sadly pytrorch lightning is inconsistent, and passes us a namespace when training, but a dict when loading from save :/
+        if isinstance(hparms, Namespace):
+            hparms = vars(hparms)
         self.punet = ProbabilisticUnet(input_channels=1,
                                        num_classes=2,
-                                       num_filters=hparms.num_filters,
-                                       latent_dim=hparms.latent_space_dim,
+                                       num_filters=hparms['num_filters'],
+                                       latent_dim=hparms['latent_space_dim'],
                                        no_fcomb_layers=4,
-                                       beta=hparms.beta)
+                                       beta=hparms['beta'])
 
     def forward(self, x):
         return self.punet(x)
@@ -55,7 +59,7 @@ class ProbUnet(pl.LightningModule):
     def model_shortname():
         return 'punet'
 
-    def pixel_wise_probabaility(self, x, sample_cnt=None):
+    def pixel_wise_probabaility(self, x, sample_cnt=16):
         """return the pixel-wise probability map
 
         Args:
@@ -65,9 +69,14 @@ class ProbUnet(pl.LightningModule):
         Returns:
             tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
         """
-        raise NotImplementedError()
+        # we approximate the pixel whise probability by sampling  sample_cnt predictions, then avergaging
+        self.sample_prediction(x)
+        preds = [self.resample_prediction() for _ in range(sample_cnt)]
+        p_c1 = torch.cat(preds, dim=1).float().mean(dim=1, keepdim=True)
+        p = torch.cat([1 - p_c1, p_c1], dim=1)
+        return p
 
-    def pixel_wise_uncertainty(self, x, sample_cnt=None):
+    def pixel_wise_uncertainty(self, x, sample_cnt=16):
         """return the pixel-wise entropy
 
         Args:
@@ -77,10 +86,20 @@ class ProbUnet(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
-        raise NotImplementedError()
+        p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
+        h = torch.sum(-p * torch.log(p + 10**-8), dim=1, keepdim=True)
+        return h
 
     def sample_prediction(self, x):
-        return self.punet(x)
+        y = self.forward(x)
+        _, pred = y.max(dim=1, keepdim=True)
+        return pred
+
+    def resample_prediction(self):
+        # resampling z for the last sample_prediction
+        y = self.punet.resample()
+        _, pred = y.max(dim=1, keepdim=True)
+        return pred
 
     @staticmethod
     def add_model_specific_args(parent_parser):

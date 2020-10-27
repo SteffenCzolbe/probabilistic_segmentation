@@ -24,7 +24,7 @@ def image_to_numpy(tensor):
 
 
 class Fig:
-    def __init__(self, rows=1, cols=1, title=None, figsize=None):
+    def __init__(self, rows=1, cols=1, title=None, figsize=None, background=False):
         """
         instantiates a plot.
         Parameters:
@@ -34,7 +34,7 @@ class Fig:
         """
         # instantiate plot
         self.fig, self.axs = plt.subplots(
-            nrows=rows, ncols=cols, dpi=300, figsize=figsize, frameon=False
+            nrows=rows, ncols=cols, dpi=300, figsize=figsize, frameon=background
         )
 
         # set title

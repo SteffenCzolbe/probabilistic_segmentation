@@ -72,19 +72,19 @@ class SoftmaxOutput(pl.LightningModule):
             tensor: B x 1 x H x W
         """
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        h = torch.sum(-p * torch.log(p), dim=1, keepdim=True)
+        h = torch.sum(-p * torch.log(p + 10**-8)), dim = 1, keepdim = True)
         return h
 
     def sample_prediction(self, x):
-        y = self.forward(x)
-        _, pred = y.max(dim=1, keepdim=True)
+        y=self.forward(x)
+        _, pred=y.max(dim = 1, keepdim = True)
         return pred
 
-    @staticmethod
+    @ staticmethod
     def add_model_specific_args(parent_parser):
-        parser = ArgumentParser(
-            parents=[parent_parser], add_help=False, conflict_handler='resolve')
-        parser.add_argument('--num_filters', type=int, nargs='+', default=[
-                            32, 64, 128, 192], help='Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192')
-        parser.add_argument('--learning_rate', type=float, default=0.0001)
+        parser=ArgumentParser(
+            parents = [parent_parser], add_help = False, conflict_handler = 'resolve')
+        parser.add_argument('--num_filters', type = int, nargs = '+', default = [
+                            32, 64, 128, 192], help = 'Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192')
+        parser.add_argument('--learning_rate', type = float, default = 0.0001)
         return parser
