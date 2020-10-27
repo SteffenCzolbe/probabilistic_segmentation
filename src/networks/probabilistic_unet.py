@@ -9,7 +9,7 @@ class Encoder(nn.Module):
     Encoder. Reducing the input with convolution and fully connected layers into a 64dim output
     """
 
-    def __init__(self, input_channels, num_filters, padding=True):
+    def __init__(self, data_dims, input_channels, num_filters, padding=True):
         super().__init__()
         self.input_channels = input_channels
         self.num_filters = num_filters
@@ -27,10 +27,9 @@ class Encoder(nn.Module):
                 DownConvBlock(input, output, padding, pool=pool))
         self.contracting_cnn = nn.Sequential(*layers)
 
-        # TODO: dynamic data size, line below defaults to 128x128 images
-        data_size = 128
         encoder_output_size = num_filters[-1] * \
-            (data_size // 2**(len(num_filters)-1))**2
+            (data_dims[1] // 2**(len(num_filters)-1)) * \
+            (data_dims[2] // 2**(len(num_filters)-1))
         self.fully_connected = nn.Sequential(nn.Flatten(),
                                              nn.Linear(
                                                  encoder_output_size, 1032),
@@ -51,9 +50,9 @@ class AxisAlignedConvGaussian(nn.Module):
     A convolutional net that parametrizes a Gaussian distribution with axis aligned covariance matrix.
     """
 
-    def __init__(self, input_channels, num_filters, latent_dim):
+    def __init__(self, data_dims, input_channels, num_filters, latent_dim):
         super().__init__()
-        self.encoder = Encoder(input_channels, num_filters)
+        self.encoder = Encoder(data_dims, input_channels, num_filters)
         self.mu = nn.Linear(64, latent_dim)
         self.log_std = nn.Linear(64, latent_dim)
 
@@ -108,27 +107,28 @@ class Fcomb(nn.Module):
 class ProbabilisticUnet(nn.Module):
     """
     A probabilistic UNet (https://arxiv.org/abs/1806.05034) implementation.
-    input_channels: the number of channels in the image (1 for greyscale and 3 for RGB)
+    data_dims: shape of the data, eg. [1,128,128]
     num_classes: the number of classes to predict
     num_filters: is a list consisint of the amount of filters layer
     latent_dim: dimension of the latent space
     no_convs_fcomb: no of 1x1 convs in the conbination function
     """
 
-    def __init__(self, input_channels=1, num_classes=1, num_filters=[32, 64, 128, 192], latent_dim=6, no_fcomb_layers=4, beta=10.0):
+    def __init__(self, data_dims, num_classes=1, num_filters=[32, 64, 128, 192], latent_dim=6, no_fcomb_layers=4, beta=10.0):
         super().__init__()
-        self.input_channels = input_channels
+        self.data_dims = data_dims
+        self.input_channels = data_dims[0]
         self.num_classes = num_classes
         self.num_filters = num_filters
         self.latent_dim = latent_dim
         self.beta = beta
 
-        self.unet = Unet(input_channels, num_classes, num_filters,
+        self.unet = Unet(self.input_channels, num_classes, num_filters,
                          apply_last_layer=False, padding=True)
-        self.prior = AxisAlignedConvGaussian(
-            input_channels, num_filters, latent_dim)
-        self.posterior = AxisAlignedConvGaussian(
-            input_channels * 2, num_filters, latent_dim)
+        self.prior = AxisAlignedConvGaussian(data_dims,
+                                             self.input_channels, num_filters, latent_dim)
+        self.posterior = AxisAlignedConvGaussian(data_dims,
+                                                 self.input_channels + num_classes, num_filters, latent_dim)
         self.fcomb = Fcomb(
             latent_dim, num_filters[0], num_classes, no_fcomb_layers)
 
@@ -141,7 +141,9 @@ class ProbabilisticUnet(nn.Module):
         self.prior_latent_distribution = self.prior(x)
         self.unet_features = self.unet.forward(x)
         if y is not None:
-            xy = torch.cat([x, y], dim=1)
+            y_onehot = F.one_hot(
+                y[:, 0], num_classes=self.num_classes).permute(0, -1, 1, 2)
+            xy = torch.cat([x, y_onehot], dim=1)
             self.posterior_latent_distribution = self.posterior(xy)
 
         # sample latent
