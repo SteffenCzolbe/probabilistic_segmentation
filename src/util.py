@@ -18,8 +18,9 @@ def get_supported_models():
     from src.lightning_models.softmax_output import SoftmaxOutput
     from src.lightning_models.mc_dropout import MCDropout
     from src.lightning_models.probabilistic_unet import ProbUnet
+    from src.lightning_models.ensemble import Ensemble
 
-    supported_models = [SoftmaxOutput, MCDropout, ProbUnet]
+    supported_models = [SoftmaxOutput, MCDropout, ProbUnet, Ensemble]
 
     # remap supported models to dict
     supported_models = dict([(model.model_shortname(), model)
