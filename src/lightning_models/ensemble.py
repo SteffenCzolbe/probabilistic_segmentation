@@ -17,12 +17,21 @@ class Ensemble(pl.LightningModule):
         self.next_model_to_sample = 0
 
     def forward(self, x):
-        y_hats = [model.forward(x) for model in self.models]
-        return y_hats
+        """perfroms a probability-mask prediction
+
+        Args:
+            x: the input
+
+        Returns:
+            tensor: 1 x C x H x W of probabilities, summing up to 1 across the channel dimension.
+        """
+        ps = [F.softmax(model.forward(x), dim=1) for model in self.models]
+        p = torch.stack(ps).mean(dim=0)
+        return p
 
     def training_step(self, batch, batch_idx):
         x, ys = batch
-        y_hats = self.forward(x)
+        y_hats = [model.forward(x) for model in self.models]
         ensemble_loss = 0
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
@@ -34,7 +43,7 @@ class Ensemble(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, ys = batch
-        y_hats = self.forward(x)
+        y_hats = [model.forward(x) for model in self.models]
         ensemble_loss = 0
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
@@ -46,7 +55,7 @@ class Ensemble(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, ys = batch
-        y_hats = self.forward(x)
+        y_hats = [model.forward(x) for model in self.models]
         ensemble_loss = 0
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
@@ -81,10 +90,7 @@ class Ensemble(pl.LightningModule):
         Returns:
             tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
         """
-        preds = [self.sample_prediction(x) for _ in range(len(self.models))]
-        p_c1 = torch.cat(preds, dim=1).float().mean(dim=1, keepdim=True)
-        p = torch.cat([1 - p_c1, p_c1], dim=1)
-        return p
+        return self.forward(x)
 
     def pixel_wise_uncertainty(self, x, sample_cnt=None):
         """return the pixel-wise entropy
@@ -96,11 +102,21 @@ class Ensemble(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
+        eps = torch.tensor(10**-8).type_as(x)
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        h = torch.sum(-p * torch.log(p + 10**-8), dim=1, keepdim=True)
+        p = torch.max(p, eps)
+        h = torch.sum(-p * torch.log2(p), dim=1, keepdim=True)
         return h
 
     def sample_prediction(self, x):
+        """samples a concrete (thresholded) prediction.
+
+        Args:
+            x: the input
+
+        Returns:
+            tensor: B x 1 x H x W, Long type (int) with class labels.
+        """
         model = self.models[self.next_model_to_sample]
 
         self.next_model_to_sample = (

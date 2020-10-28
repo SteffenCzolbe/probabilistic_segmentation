@@ -16,24 +16,33 @@ class SoftmaxOutput(pl.LightningModule):
                          num_filters=self.hparams.num_filters)
 
     def forward(self, x):
-        return self.unet(x)
+        """perfroms a probability-mask prediction
+
+        Args:
+            x: the input
+
+        Returns:
+            tensor: 1 x C x H x W of probabilities, summing up to 1 across the channel dimension.
+        """
+        y = self.unet(x)
+        return F.softmax(y, dim=1)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self(x)
+        y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log('train/loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self(x)
+        y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log('val/loss', loss)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self(x)
+        y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log('test/loss', loss)
 
@@ -62,8 +71,7 @@ class SoftmaxOutput(pl.LightningModule):
         Returns:
             tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
         """
-        y = self.forward(x)
-        return F.softmax(y, dim=1)
+        return self.forward(x)
 
     def pixel_wise_uncertainty(self, x, sample_cnt=None):
         """return the pixel-wise entropy
@@ -75,11 +83,21 @@ class SoftmaxOutput(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
+        eps = torch.tensor(10**-8).type_as(x)
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        h = torch.sum(-p * torch.log(p + 10**-8), dim=1, keepdim=True)
+        p = torch.max(p, eps)
+        h = torch.sum(-p * torch.log2(p), dim=1, keepdim=True)
         return h
 
     def sample_prediction(self, x):
+        """samples a concrete (thresholded) prediction.
+
+        Args:
+            x: the input
+
+        Returns:
+            tensor: B x 1 x H x W, Long type (int) with class labels.
+        """
         y = self.forward(x)
         _, pred = y.max(dim=1, keepdim=True)
         return pred

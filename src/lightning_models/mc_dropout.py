@@ -16,13 +16,20 @@ class MCDropout(pl.LightningModule):
         )
 
     def forward(self, x):
+        """perfroms a probability-mask prediction
 
-        return self.unet(x)
+        Args:
+            x: the input
+
+        Returns:
+            tensor: 1 x C x H x W of probabilities, summing up to 1 across the channel dimension.
+        """
+        return F.softmax(self.unet(x), dim=1)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         self.train()
-        y_hat = self(x)
+        y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("train/loss", loss)
         return loss
@@ -30,14 +37,14 @@ class MCDropout(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         self.train()
-        y_hat = self(x)
+        y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("val/loss", loss)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         self.train()
-        y_hat = self(x)
+        y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("test/loss", loss)
 
@@ -67,10 +74,8 @@ class MCDropout(pl.LightningModule):
             tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
         """
         # we approximate the pixel wise probability by sampling  sample_cnt predictions, then avergaging
-        preds = [self.sample_prediction(x) for _ in range(sample_cnt)]
-        print(preds)
-        p_c1 = torch.cat(preds, dim=1).float().mean(dim=1, keepdim=True)
-        p = torch.cat([1 - p_c1, p_c1], dim=1)
+        ps = [self.forward(x) for _ in range(sample_cnt)]
+        p = torch.stack(ps).mean(dim=0)
         return p
 
     def pixel_wise_uncertainty(self, x, sample_cnt=16):
@@ -83,16 +88,26 @@ class MCDropout(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
+        eps = torch.tensor(10**-8).type_as(x)
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        h = torch.sum(-p * torch.log2(p + 1e-8), dim=1, keepdim=True)
+        p = torch.max(p, eps)
+        h = torch.sum(-p * torch.log2(p), dim=1, keepdim=True)
         return h
 
     def sample_prediction(self, x):
+        """samples a concrete (thresholded) prediction.
+
+        Args:
+            x: the input
+
+        Returns:
+            tensor: B x 1 x H x W, Long type (int) with class labels.
+        """
         y = self.forward(x)
         _, pred = y.max(dim=1, keepdim=True)
         return pred
 
-    @staticmethod
+    @ staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(
             parents=[parent_parser], add_help=False, conflict_handler="resolve"

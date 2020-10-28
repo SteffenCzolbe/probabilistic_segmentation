@@ -19,7 +19,15 @@ class ProbUnet(pl.LightningModule):
                                        beta=self.hparams.beta)
 
     def forward(self, x):
-        return self.punet(x)
+        """perfroms a probability-mask prediction
+
+        Args:
+            x: the input
+
+        Returns:
+            tensor: 1 x C x H x W of probabilities, summing up to 1 across the channel dimension.
+        """
+        return F.softmax(self.punet(x), dim=1)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
@@ -72,9 +80,9 @@ class ProbUnet(pl.LightningModule):
         """
         # we approximate the pixel whise probability by sampling  sample_cnt predictions, then avergaging
         self.sample_prediction(x)
-        preds = [self.resample_prediction() for _ in range(sample_cnt)]
-        p_c1 = torch.cat(preds, dim=1).float().mean(dim=1, keepdim=True)
-        p = torch.cat([1 - p_c1, p_c1], dim=1)
+        ps = [self.resample_prediction_non_threshholded()
+              for _ in range(sample_cnt)]
+        p = torch.stack(ps).mean(dim=0)
         return p
 
     def pixel_wise_uncertainty(self, x, sample_cnt=16):
@@ -87,20 +95,29 @@ class ProbUnet(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
+        eps = torch.tensor(10**-8).type_as(x)
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        h = torch.sum(-p * torch.log(p + 10**-8), dim=1, keepdim=True)
+        p = torch.max(p, eps)
+        h = torch.sum(-p * torch.log2(p), dim=1, keepdim=True)
         return h
 
     def sample_prediction(self, x):
+        """samples a concrete (thresholded) prediction.
+
+        Args:
+            x: the input
+
+        Returns:
+            tensor: B x 1 x H x W, Long type (int) with class labels.
+        """
         y = self.forward(x)
         _, pred = y.max(dim=1, keepdim=True)
         return pred
 
-    def resample_prediction(self):
+    def resample_prediction_non_threshholded(self):
         # resampling z for the last sample_prediction
         y = self.punet.resample()
-        _, pred = y.max(dim=1, keepdim=True)
-        return pred
+        return F.softmax(y, dim=1)
 
     @staticmethod
     def add_model_specific_args(parent_parser):
