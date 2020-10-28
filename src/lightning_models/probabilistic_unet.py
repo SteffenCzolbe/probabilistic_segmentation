@@ -111,6 +111,6 @@ class ProbUnet(pl.LightningModule):
         parser.add_argument('--learning_rate', type=float, default=0.0001)
         parser.add_argument('--latent_space_dim', type=int, default=6,
                             help='Probabalistic-Unet: Dimensionality of the latent space (Default 6)')
-        parser.add_argument('--beta', type=float, default=10.0,
-                            help='Probabalistic-Unet: Weight factor for the KL-divergence loss (Default 10.0)')
+        parser.add_argument('--beta', type=float, default=0.001,
+                            help='Probabalistic-Unet: Weight factor for the KL-divergence loss (Default 0.001)')
         return parser
