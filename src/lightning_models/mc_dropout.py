@@ -20,6 +20,7 @@ class MCDropout(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
+        self.train()
         y_hat = self(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("train/loss", loss)
@@ -27,12 +28,14 @@ class MCDropout(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
+        self.train()
         y_hat = self(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("val/loss", loss)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
+        self.train()
         y_hat = self(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("test/loss", loss)
