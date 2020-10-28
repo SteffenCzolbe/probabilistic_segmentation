@@ -30,7 +30,7 @@ class Ensemble(pl.LightningModule):
             ensemble_loss += loss
 
         self.log('train/loss', ensemble_loss)
-        return loss
+        return ensemble_loss
 
     def validation_step(self, batch, batch_idx):
         x, ys = batch
