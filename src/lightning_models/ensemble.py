@@ -42,7 +42,7 @@ class Ensemble(pl.LightningModule):
             ensemble_loss += loss
 
         self.log('val/loss', ensemble_loss)
-        return loss
+        return ensemble_loss
 
     def test_step(self, batch, batch_idx):
         x, ys = batch
@@ -54,7 +54,7 @@ class Ensemble(pl.LightningModule):
             ensemble_loss += loss
 
         self.log('test/loss', ensemble_loss)
-        return loss
+        return ensemble_loss
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
