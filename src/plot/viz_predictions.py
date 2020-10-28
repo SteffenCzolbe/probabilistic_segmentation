@@ -49,7 +49,8 @@ def load_model(model_path):
     # load model
     model_class = util.get_supported_models()[model_type]
     checkpoints = find_checkpoints()
-    assert len(checkpoints) == 1, f"multiple checkpoints detected!: {checkpoints}"
+    assert len(
+        checkpoints) == 1, f"multiple checkpoints detected!: {checkpoints}"
     model = model_class.load_from_checkpoint(checkpoint_path=checkpoints[0])
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
@@ -72,7 +73,8 @@ def predict(model, x):
         predictions.append(pred)
 
         # uncertainty
-        pred = model.pixel_wise_uncertainty(x.unsqueeze(0), sample_cnt=16).squeeze(0)
+        pred = model.pixel_wise_uncertainty(
+            x.unsqueeze(0), sample_cnt=16).squeeze(0)
         predictions.append(pred)
 
     return predictions
@@ -85,7 +87,7 @@ def plot_predictions(fig, row, predictions, model_name):
             col + 1,
             pred,
             vmin=0,
-            vmax=1 if col < len(predictions) - 1 else None,
+            vmax=1,
             title=model_name if col == 0 else None,
         )
 
