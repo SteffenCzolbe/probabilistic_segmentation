@@ -108,7 +108,7 @@ class ProbUnet(pl.LightningModule):
             parents=[parent_parser], add_help=False, conflict_handler='resolve')
         parser.add_argument('--num_filters', type=int, nargs='+', default=[
                             32, 64, 128, 192], help='Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192')
-        parser.add_argument('--learning_rate', type=float, default=0.0001)
+        parser.add_argument('--learning_rate', type=float, default=0.0005)
         parser.add_argument('--latent_space_dim', type=int, default=6,
                             help='Probabalistic-Unet: Dimensionality of the latent space (Default 6)')
         parser.add_argument('--beta', type=float, default=0.001,
