@@ -65,7 +65,12 @@ class MCDropout(pl.LightningModule):
         Returns:
             tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
         """
-        raise NotImplementedError()
+        # we approximate the pixel wise probability by sampling  sample_cnt predictions, then avergaging
+        self.sample_prediction(x)
+        preds = [self.resample_prediction() for _ in range(sample_cnt)]
+        p_c1 = torch.cat(preds, dim=1).float().mean(dim=1, keepdim=True)
+        p = torch.cat([1 - p_c1, p_c1], dim=1)
+        return p
 
     def pixel_wise_uncertainty(self, x, sample_cnt=None):
         """return the pixel-wise entropy
@@ -77,10 +82,14 @@ class MCDropout(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
-        raise NotImplementedError()
+        p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
+        h = torch.sum(-p * torch.log2(p + 10 ** -8), dim=1, keepdim=True)
+        return h
 
     def sample_prediction(self, x):
-        raise NotImplementedError()
+        y = self.forward(x)
+        _, pred = y.max(dim=1, keepdim=True)
+        return pred
 
     @staticmethod
     def add_model_specific_args(parent_parser):
