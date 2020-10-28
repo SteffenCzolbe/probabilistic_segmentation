@@ -1,55 +1,66 @@
 import torch
 import pytorch_lightning as pl
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 import torch.nn.functional as F
 
-from src.networks.unet import Unet
+from src.networks.probabilistic_unet import ProbabilisticUnet
 
 
 class ProbUnet(pl.LightningModule):
-    def __init__(self, hparms):
+    def __init__(self, hparams):
         super().__init__()
-        self.save_hyperparameters(hparms)
+        self.save_hyperparameters(hparams)
+
+        self.punet = ProbabilisticUnet(data_dims=self.hparams.data_dims,
+                                       num_classes=2,
+                                       num_filters=self.hparams.num_filters,
+                                       latent_dim=self.hparams.latent_space_dim,
+                                       no_fcomb_layers=4,
+                                       beta=self.hparams.beta)
 
     def forward(self, x):
-        raise NotImplementedError()
+        return self.punet(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self(x)
-        loss = None
-        raise NotImplementedError()
-        self.log('train_loss', loss)
+        loss, reconstruction_loss, kl_loss = self.punet.elbo(x, y)
+        self.log('train/loss', loss)
+        self.log('train/kl_div', kl_loss)
+        self.log('train/recon_loss', reconstruction_loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self(x)
-        raise NotImplementedError()
-        loss = None
-        self.log('val_loss', loss)
+        loss, reconstruction_loss, kl_loss = self.punet.elbo(x, y)
+        self.log('val/loss', loss)
+        self.log('val/kl_div', kl_loss)
+        self.log('val/recon_loss', reconstruction_loss)
+        return loss
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self(x)
-        loss = None
-        raise NotImplementedError()
-        self.log('test_loss', loss)
+        loss, reconstruction_loss, kl_loss = self.punet.elbo(x, y)
+        self.log('test/loss', loss)
+        self.log('test/kl_div', kl_loss)
+        self.log('test/recon_loss', reconstruction_loss)
+        return loss
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
     @staticmethod
     def model_name():
-        raise NotImplementedError()
-        return ''
+        return 'Prob. U-Net'
 
     @staticmethod
     def model_shortname():
-        raise NotImplementedError()
-        return ''
+        return 'punet'
 
-    def pixel_wise_probabaility(self, x, sample_cnt=None):
+    @staticmethod
+    def train_dataset_annotaters_separated():
+        return True
+
+    def pixel_wise_probabaility(self, x, sample_cnt=16):
         """return the pixel-wise probability map
 
         Args:
@@ -59,9 +70,14 @@ class ProbUnet(pl.LightningModule):
         Returns:
             tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
         """
-        raise NotImplementedError()
+        # we approximate the pixel whise probability by sampling  sample_cnt predictions, then avergaging
+        self.sample_prediction(x)
+        preds = [self.resample_prediction() for _ in range(sample_cnt)]
+        p_c1 = torch.cat(preds, dim=1).float().mean(dim=1, keepdim=True)
+        p = torch.cat([1 - p_c1, p_c1], dim=1)
+        return p
 
-    def pixel_wise_uncertainty(self, x, sample_cnt=None):
+    def pixel_wise_uncertainty(self, x, sample_cnt=16):
         """return the pixel-wise entropy
 
         Args:
@@ -71,10 +87,20 @@ class ProbUnet(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
-        raise NotImplementedError()
+        p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
+        h = torch.sum(-p * torch.log(p + 10**-8), dim=1, keepdim=True)
+        return h
 
     def sample_prediction(self, x):
-        raise NotImplementedError()
+        y = self.forward(x)
+        _, pred = y.max(dim=1, keepdim=True)
+        return pred
+
+    def resample_prediction(self):
+        # resampling z for the last sample_prediction
+        y = self.punet.resample()
+        _, pred = y.max(dim=1, keepdim=True)
+        return pred
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -83,5 +109,8 @@ class ProbUnet(pl.LightningModule):
         parser.add_argument('--num_filters', type=int, nargs='+', default=[
                             32, 64, 128, 192], help='Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192')
         parser.add_argument('--learning_rate', type=float, default=0.0001)
-        raise NotImplementedError()
+        parser.add_argument('--latent_space_dim', type=int, default=6,
+                            help='Probabalistic-Unet: Dimensionality of the latent space (Default 6)')
+        parser.add_argument('--beta', type=float, default=0.001,
+                            help='Probabalistic-Unet: Weight factor for the KL-divergence loss (Default 0.001)')
         return parser

@@ -7,9 +7,9 @@ from src.networks.unet import Unet
 
 
 class MCDropout(pl.LightningModule):
-    def __init__(self, hparms):
+    def __init__(self, hparams):
         super().__init__()
-        self.save_hyperparameters(hparms)
+        self.save_hyperparameters(hparams)
 
         self.unet = Unet(
             input_channels=1, num_classes=2, num_filters=self.hparams.num_filters
@@ -47,6 +47,10 @@ class MCDropout(pl.LightningModule):
     @staticmethod
     def model_shortname():
         return "mcdropout"
+
+    @staticmethod
+    def train_dataset_annotaters_separated():
+        return True
 
     def pixel_wise_probabaility(self, x, sample_cnt=None):
         """return the pixel-wise probability map
@@ -94,4 +98,5 @@ class MCDropout(pl.LightningModule):
             default=0,
             help="The probability of setting output to zero.",
         )
+
         return parser
