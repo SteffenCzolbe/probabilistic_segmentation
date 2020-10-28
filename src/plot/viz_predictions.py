@@ -95,6 +95,5 @@ def make_fig(model_checkpoints):
 
 if __name__ == '__main__':
     # './trained_models/softmax',
-    model_checkpoints = ['./lightning_logs/version_0', './lightning_logs/version_2',
-                         './lightning_logs/version_4', './lightning_logs/version_6', './lightning_logs/version_8']
+    model_checkpoints = glob.glob('./trained_models/*')
     make_fig(model_checkpoints)
