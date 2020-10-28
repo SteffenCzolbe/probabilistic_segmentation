@@ -11,6 +11,10 @@ class MCDropout(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(hparms)
 
+        self.unet = Unet(
+            input_channels=1, num_classes=2, num_filters=self.hparams.num_filters
+        )
+
     def forward(self, x):
         return self.unet(x)
 
@@ -34,7 +38,6 @@ class MCDropout(pl.LightningModule):
         self.log("test/loss", loss)
 
     def configure_optimizers(self):
-        print("***************", self.parameters())
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
     @staticmethod
