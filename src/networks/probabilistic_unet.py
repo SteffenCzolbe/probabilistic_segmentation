@@ -182,8 +182,11 @@ class ProbabilisticUnet(nn.Module):
             self.prior_latent_distribution, self.posterior_latent_distribution).mean()
 
         # reconstruction loss
-        reconstruction_loss = F.cross_entropy(
-            self.y_hat_raw, y[:, 0])
+        if not self.training:
+            # resample output based on prior, not posterior
+            self.forward(x)
+
+        reconstruction_loss = F.cross_entropy(self.y_hat_raw, y[:, 0])
 
         loss = reconstruction_loss + self.beta * kl_loss
 
