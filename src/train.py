@@ -49,7 +49,7 @@ def cli_main():
     # ------------
     # testing
     # ------------
-    trainer.test(model, dataset)
+    trainer.test()
 
 
 if __name__ == '__main__':
