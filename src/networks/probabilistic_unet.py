@@ -58,9 +58,9 @@ class AxisAlignedConvGaussian(nn.Module):
         self.log_std = nn.Linear(64, latent_dim)
 
         # We init mu and std with small weights
-        for layer in [self.mu, self.log_std]:
-            torch.nn.init.normal_(layer.weight, mean=0.0, std=0.1)
-            torch.nn.init.normal_(layer.bias, mean=0.0, std=0.1)
+        # for layer in [self.mu, self.log_std]:
+        #     torch.nn.init.normal_(layer.weight, mean=0.0, std=0.1)
+        #     torch.nn.init.normal_(layer.bias, mean=0.0, std=0.1)
 
     def forward(self, input):
         h = self.encoder(input)
