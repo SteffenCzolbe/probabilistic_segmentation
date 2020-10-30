@@ -10,9 +10,10 @@ class Unet(nn.Module):
     num_filters: list with the amount of filters per layer
     apply_last_layer: boolean to apply last layer or not (not used in Probabilistic UNet)
     padidng: Boolean, if true we pad the images with 1 so that we keep the same dimensions
+    p: dropout probability
     """
 
-    def __init__(self, input_channels, num_classes, num_filters, apply_last_layer=True, padding=True, p=0):
+    def __init__(self, input_channels, num_classes, num_filters, apply_last_layer=True, padding=True, p=0, batch_norm=False):
         super(Unet, self).__init__()
         self.input_channels = input_channels
         self.num_classes = num_classes
@@ -30,19 +31,20 @@ class Unet(nn.Module):
             else:
                 pool = True
             self.contracting_path.append(
-                DownConvBlock(input, output, padding, pool=pool, p=p))
+                DownConvBlock(input, output, padding, pool=pool, p=p, batch_norm=batch_norm))
 
         self.upsampling_path = nn.ModuleList()
         n = len(self.num_filters) - 2
         for i in range(n, -1, -1):
             input = output + self.num_filters[i]
             output = self.num_filters[i]
-            self.upsampling_path.append(UpConvBlock(input, output, padding, p=p))
+            self.upsampling_path.append(UpConvBlock(
+                input, output, padding, p=p, batch_norm=batch_norm))
 
         if self.apply_last_layer:
             last_layer = []
             last_layer.append(nn.Dropout2d(p=p))
-            last_layer.append(nn.Conv2d(output, num_classes, kernel_size=1)) 
+            last_layer.append(nn.Conv2d(output, num_classes, kernel_size=1))
             self.last_layer = nn.Sequential(*last_layer)
 
     def forward(self, x):

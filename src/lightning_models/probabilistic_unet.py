@@ -17,7 +17,8 @@ class ProbUnet(pl.LightningModule):
                                        latent_dim=self.hparams.latent_space_dim,
                                        no_fcomb_layers=4,
                                        beta=self.hparams.beta,
-                                       dropout=self.hparams.dropout)
+                                       dropout=self.hparams.dropout,
+                                       batch_norm=self.hparams.batch_norm)
 
     def forward(self, x):
         """perfroms a probability-mask prediction
@@ -133,4 +134,6 @@ class ProbUnet(pl.LightningModule):
                             help='Probabalistic-Unet: Weight factor for the KL-divergence loss (Default 0.001)')
         parser.add_argument('--dropout', action='store_true',
                             help='Set to use dropout during training.')
+        parser.add_argument('--batch_norm', action='store_true',
+                            help='Set to use batch normalization during training.')
         return parser
