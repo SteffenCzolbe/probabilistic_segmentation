@@ -12,7 +12,10 @@ class MCDropout(pl.LightningModule):
         self.save_hyperparameters(hparams)
 
         self.unet = Unet(
-            input_channels=1, num_classes=2, num_filters=self.hparams.num_filters
+            input_channels=1,
+            num_classes=2,
+            num_filters=self.hparams.num_filters,
+            batch_norm=self.hparams.batch_norm
         )
 
     def forward(self, x):
@@ -126,5 +129,7 @@ class MCDropout(pl.LightningModule):
             default=0,
             help="The probability of setting output to zero.",
         )
+        parser.add_argument('--batch_norm', action='store_true',
+                            help='Set to use batch normalization during training.')
 
         return parser
