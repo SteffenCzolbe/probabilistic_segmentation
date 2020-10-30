@@ -24,11 +24,11 @@ class MCDropout(pl.LightningModule):
         Returns:
             tensor: 1 x C x H x W of probabilities, summing up to 1 across the channel dimension.
         """
+        self.train()
         return F.softmax(self.unet(x), dim=1)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        self.train()
         y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("train/loss", loss)
