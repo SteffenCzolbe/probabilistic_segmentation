@@ -11,14 +11,15 @@ class ProbUnet(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)
 
-        self.punet = ProbabilisticUnet(
-            data_dims=self.hparams.data_dims,
-            num_classes=2,
-            num_filters=self.hparams.num_filters,
-            latent_dim=self.hparams.latent_space_dim,
-            no_fcomb_layers=4,
-            beta=self.hparams.beta,
-        )
+        self.punet = ProbabilisticUnet(data_dims=self.hparams.data_dims,
+                                       num_classes=2,
+                                       num_filters=self.hparams.num_filters,
+                                       latent_dim=self.hparams.latent_space_dim,
+                                       no_fcomb_layers=4,
+                                       beta=self.hparams.beta,
+                                       dropout=self.hparams.dropout,
+                                       batch_norm=self.hparams.batch_norm)
+
 
     def forward(self, x):
         """perfroms a probability-mask prediction
@@ -124,6 +125,7 @@ class ProbUnet(pl.LightningModule):
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(
+<<<<<<< HEAD
             parents=[parent_parser], add_help=False, conflict_handler="resolve"
         )
         parser.add_argument(
@@ -146,4 +148,18 @@ class ProbUnet(pl.LightningModule):
             default=0.001,
             help="Probabalistic-Unet: Weight factor for the KL-divergence loss (Default 0.001)",
         )
+=======
+            parents=[parent_parser], add_help=False, conflict_handler='resolve')
+        parser.add_argument('--num_filters', type=int, nargs='+', default=[
+                            32, 64, 128, 192], help='Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192')
+        parser.add_argument('--learning_rate', type=float, default=0.0005)
+        parser.add_argument('--latent_space_dim', type=int, default=6,
+                            help='Probabalistic-Unet: Dimensionality of the latent space (Default 6)')
+        parser.add_argument('--beta', type=float, default=0.001,
+                            help='Probabalistic-Unet: Weight factor for the KL-divergence loss (Default 0.001)')
+        parser.add_argument('--dropout', action='store_true',
+                            help='Set to use dropout during training.')
+        parser.add_argument('--batch_norm', action='store_true',
+                            help='Set to use batch normalization during training.')
+>>>>>>> 013c0da29df9a17148ebbc8a8c6e311e11e81413
         return parser

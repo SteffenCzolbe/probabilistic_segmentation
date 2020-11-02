@@ -12,7 +12,10 @@ class MCDropout(pl.LightningModule):
         self.save_hyperparameters(hparams)
 
         self.unet = Unet(
-            input_channels=1, num_classes=2, num_filters=self.hparams.num_filters
+            input_channels=1,
+            num_classes=2,
+            num_filters=self.hparams.num_filters,
+            batch_norm=self.hparams.batch_norm
         )
 
     def forward(self, x):
@@ -24,11 +27,11 @@ class MCDropout(pl.LightningModule):
         Returns:
             tensor: 1 x C x H x W of probabilities, summing up to 1 across the channel dimension.
         """
+        self.train()
         return F.softmax(self.unet(x), dim=1)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        self.train()
         y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("train/loss", loss)
@@ -127,5 +130,7 @@ class MCDropout(pl.LightningModule):
             default=0,
             help="The probability of setting output to zero.",
         )
+        parser.add_argument('--batch_norm', action='store_true',
+                            help='Set to use batch normalization during training.')
 
         return parser

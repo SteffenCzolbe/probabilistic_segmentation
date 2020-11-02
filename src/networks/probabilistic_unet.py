@@ -9,7 +9,7 @@ class Encoder(nn.Module):
     Encoder. Reducing the input with convolution and fully connected layers into a 64dim output
     """
 
-    def __init__(self, data_dims, input_channels, num_filters, padding=True):
+    def __init__(self, data_dims, input_channels, num_filters, padding=True, dropout=False, batch_norm=False):
         super().__init__()
         self.input_channels = input_channels
         self.num_filters = num_filters
@@ -24,7 +24,7 @@ class Encoder(nn.Module):
             else:
                 pool = True
             layers.append(
-                DownConvBlock(input, output, padding, pool=pool))
+                DownConvBlock(input, output, padding, pool=pool, p=0.5 if dropout else 0., batch_norm=batch_norm))
         self.contracting_cnn = nn.Sequential(*layers)
 
         encoder_output_size = num_filters[-1] * \
@@ -50,16 +50,17 @@ class AxisAlignedConvGaussian(nn.Module):
     A convolutional net that parametrizes a Gaussian distribution with axis aligned covariance matrix.
     """
 
-    def __init__(self, data_dims, input_channels, num_filters, latent_dim):
+    def __init__(self, data_dims, input_channels, num_filters, latent_dim, dropout=False, batch_norm=False):
         super().__init__()
-        self.encoder = Encoder(data_dims, input_channels, num_filters)
+        self.encoder = Encoder(data_dims, input_channels,
+                               num_filters, dropout=dropout, batch_norm=batch_norm)
         self.mu = nn.Linear(64, latent_dim)
         self.log_std = nn.Linear(64, latent_dim)
 
         # We init mu and std with small weights
-        for layer in [self.mu, self.log_std]:
-            torch.nn.init.normal_(layer.weight, mean=0.0, std=0.1)
-            torch.nn.init.normal_(layer.bias, mean=0.0, std=0.1)
+        # for layer in [self.mu, self.log_std]:
+        #     torch.nn.init.normal_(layer.weight, mean=0.0, std=0.1)
+        #     torch.nn.init.normal_(layer.bias, mean=0.0, std=0.1)
 
     def forward(self, input):
         h = self.encoder(input)
@@ -114,7 +115,7 @@ class ProbabilisticUnet(nn.Module):
     no_convs_fcomb: no of 1x1 convs in the conbination function
     """
 
-    def __init__(self, data_dims, num_classes=1, num_filters=[32, 64, 128, 192], latent_dim=6, no_fcomb_layers=4, beta=10.0):
+    def __init__(self, data_dims, num_classes=1, num_filters=[32, 64, 128, 192], latent_dim=6, no_fcomb_layers=4, beta=10.0, dropout=False, batch_norm=False):
         super().__init__()
         self.data_dims = data_dims
         self.input_channels = data_dims[0]
@@ -124,11 +125,11 @@ class ProbabilisticUnet(nn.Module):
         self.beta = beta
 
         self.unet = Unet(self.input_channels, num_classes, num_filters,
-                         apply_last_layer=False, padding=True)
+                         apply_last_layer=False, padding=True, p=0.5 if dropout else 0., batch_norm=batch_norm)
         self.prior = AxisAlignedConvGaussian(data_dims,
-                                             self.input_channels, num_filters, latent_dim)
+                                             self.input_channels, num_filters, latent_dim, dropout=dropout, batch_norm=batch_norm)
         self.posterior = AxisAlignedConvGaussian(data_dims,
-                                                 self.input_channels + num_classes, num_filters, latent_dim)
+                                                 self.input_channels + num_classes, num_filters, latent_dim, dropout=dropout, batch_norm=batch_norm)
         self.fcomb = Fcomb(
             latent_dim, num_filters[0], num_classes, no_fcomb_layers)
 
