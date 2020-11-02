@@ -11,9 +11,9 @@ class SoftmaxOutput(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)
 
-        self.unet = Unet(input_channels=1,
-                         num_classes=2,
-                         num_filters=self.hparams.num_filters)
+        self.unet = Unet(
+            input_channels=1, num_classes=2, num_filters=self.hparams.num_filters
+        )
 
     def forward(self, x):
         """perfroms a probability-mask prediction
@@ -31,31 +31,31 @@ class SoftmaxOutput(pl.LightningModule):
         x, y = batch
         y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
-        self.log('train/loss', loss)
+        self.log("train/loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
-        self.log('val/loss', loss)
+        self.log("val/loss", loss)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
-        self.log('test/loss', loss)
+        self.log("test/loss", loss)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
     @staticmethod
     def model_name():
-        return 'Softmax Output'
+        return "Softmax Output"
 
     @staticmethod
     def model_shortname():
-        return 'softm'
+        return "softm"
 
     @staticmethod
     def train_dataset_annotaters_separated():
@@ -83,11 +83,12 @@ class SoftmaxOutput(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
-        eps = torch.tensor(10**-8).type_as(x)
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        p = torch.max(p, eps)
-        h = torch.sum(-p * torch.log2(p), dim=1, keepdim=True)
-        return h
+        mask = p > 0
+        h = torch.zeros_like(p)
+        h[mask] = torch.log2(1 / p[mask])
+        H = torch.sum(p * h, dim=1, keepdim=True)
+        return H
 
     def sample_prediction(self, x):
         """samples a concrete (thresholded) prediction.
@@ -102,11 +103,17 @@ class SoftmaxOutput(pl.LightningModule):
         _, pred = y.max(dim=1, keepdim=True)
         return pred
 
-    @ staticmethod
+    @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(
-            parents=[parent_parser], add_help=False, conflict_handler='resolve')
-        parser.add_argument('--num_filters', type=int, nargs='+', default=[
-                            32, 64, 128, 192], help='Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192')
-        parser.add_argument('--learning_rate', type=float, default=0.0001)
+            parents=[parent_parser], add_help=False, conflict_handler="resolve"
+        )
+        parser.add_argument(
+            "--num_filters",
+            type=int,
+            nargs="+",
+            default=[32, 64, 128, 192],
+            help="Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192",
+        )
+        parser.add_argument("--learning_rate", type=float, default=0.0001)
         return parser

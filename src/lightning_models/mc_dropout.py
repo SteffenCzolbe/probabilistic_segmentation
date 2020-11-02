@@ -88,11 +88,12 @@ class MCDropout(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
-        eps = torch.tensor(10**-8).type_as(x)
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        p = torch.max(p, eps)
-        h = torch.sum(-p * torch.log2(p), dim=1, keepdim=True)
-        return h
+        mask = p > 0
+        h = torch.zeros_like(p)
+        h[mask] = torch.log2(1 / p[mask])
+        H = torch.sum(p * h, dim=1, keepdim=True)
+        return H
 
     def sample_prediction(self, x):
         """samples a concrete (thresholded) prediction.
@@ -107,7 +108,7 @@ class MCDropout(pl.LightningModule):
         _, pred = y.max(dim=1, keepdim=True)
         return pred
 
-    @ staticmethod
+    @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(
             parents=[parent_parser], add_help=False, conflict_handler="resolve"

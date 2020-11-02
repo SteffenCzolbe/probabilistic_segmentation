@@ -11,12 +11,14 @@ class ProbUnet(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)
 
-        self.punet = ProbabilisticUnet(data_dims=self.hparams.data_dims,
-                                       num_classes=2,
-                                       num_filters=self.hparams.num_filters,
-                                       latent_dim=self.hparams.latent_space_dim,
-                                       no_fcomb_layers=4,
-                                       beta=self.hparams.beta)
+        self.punet = ProbabilisticUnet(
+            data_dims=self.hparams.data_dims,
+            num_classes=2,
+            num_filters=self.hparams.num_filters,
+            latent_dim=self.hparams.latent_space_dim,
+            no_fcomb_layers=4,
+            beta=self.hparams.beta,
+        )
 
     def forward(self, x):
         """perfroms a probability-mask prediction
@@ -32,25 +34,25 @@ class ProbUnet(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         loss, reconstruction_loss, kl_loss = self.punet.elbo(x, y)
-        self.log('train/loss', loss)
-        self.log('train/kl_div', kl_loss)
-        self.log('train/recon_loss', reconstruction_loss)
+        self.log("train/loss", loss)
+        self.log("train/kl_div", kl_loss)
+        self.log("train/recon_loss", reconstruction_loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         loss, reconstruction_loss, kl_loss = self.punet.elbo(x, y)
-        self.log('val/loss', loss)
-        self.log('val/kl_div', kl_loss)
-        self.log('val/recon_loss', reconstruction_loss)
+        self.log("val/loss", loss)
+        self.log("val/kl_div", kl_loss)
+        self.log("val/recon_loss", reconstruction_loss)
         return loss
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         loss, reconstruction_loss, kl_loss = self.punet.elbo(x, y)
-        self.log('test/loss', loss)
-        self.log('test/kl_div', kl_loss)
-        self.log('test/recon_loss', reconstruction_loss)
+        self.log("test/loss", loss)
+        self.log("test/kl_div", kl_loss)
+        self.log("test/recon_loss", reconstruction_loss)
         return loss
 
     def configure_optimizers(self):
@@ -58,11 +60,11 @@ class ProbUnet(pl.LightningModule):
 
     @staticmethod
     def model_name():
-        return 'Prob. U-Net'
+        return "Prob. U-Net"
 
     @staticmethod
     def model_shortname():
-        return 'punet'
+        return "punet"
 
     @staticmethod
     def train_dataset_annotaters_separated():
@@ -80,8 +82,7 @@ class ProbUnet(pl.LightningModule):
         """
         # we approximate the pixel whise probability by sampling  sample_cnt predictions, then avergaging
         self.sample_prediction(x)
-        ps = [self.resample_prediction_non_threshholded()
-              for _ in range(sample_cnt)]
+        ps = [self.resample_prediction_non_threshholded() for _ in range(sample_cnt)]
         p = torch.stack(ps).mean(dim=0)
         return p
 
@@ -95,11 +96,12 @@ class ProbUnet(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
-        eps = torch.tensor(10**-8).type_as(x)
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        p = torch.max(p, eps)
-        h = torch.sum(-p * torch.log2(p), dim=1, keepdim=True)
-        return h
+        mask = p > 0
+        h = torch.zeros_like(p)
+        h[mask] = torch.log2(1 / p[mask])
+        H = torch.sum(p * h, dim=1, keepdim=True)
+        return H
 
     def sample_prediction(self, x):
         """samples a concrete (thresholded) prediction.
@@ -122,12 +124,26 @@ class ProbUnet(pl.LightningModule):
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(
-            parents=[parent_parser], add_help=False, conflict_handler='resolve')
-        parser.add_argument('--num_filters', type=int, nargs='+', default=[
-                            32, 64, 128, 192], help='Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192')
-        parser.add_argument('--learning_rate', type=float, default=0.0005)
-        parser.add_argument('--latent_space_dim', type=int, default=6,
-                            help='Probabalistic-Unet: Dimensionality of the latent space (Default 6)')
-        parser.add_argument('--beta', type=float, default=0.001,
-                            help='Probabalistic-Unet: Weight factor for the KL-divergence loss (Default 0.001)')
+            parents=[parent_parser], add_help=False, conflict_handler="resolve"
+        )
+        parser.add_argument(
+            "--num_filters",
+            type=int,
+            nargs="+",
+            default=[32, 64, 128, 192],
+            help="Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192",
+        )
+        parser.add_argument("--learning_rate", type=float, default=0.0005)
+        parser.add_argument(
+            "--latent_space_dim",
+            type=int,
+            default=6,
+            help="Probabalistic-Unet: Dimensionality of the latent space (Default 6)",
+        )
+        parser.add_argument(
+            "--beta",
+            type=float,
+            default=0.001,
+            help="Probabalistic-Unet: Weight factor for the KL-divergence loss (Default 0.001)",
+        )
         return parser
