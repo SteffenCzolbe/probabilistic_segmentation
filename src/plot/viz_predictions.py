@@ -1,6 +1,7 @@
 from .plot2d import Fig
 from src.datamodels.lidc_datamodule import LIDCDataModule
 from src import util
+from tqdm import tqdm
 import torch
 import yaml
 import os
@@ -96,7 +97,7 @@ def make_fig(model_checkpoints):
     sample = load_sample(0)
     fig = set_up_figure(len(model_checkpoints), sample)
 
-    for row, model_checkpoint in enumerate(model_checkpoints):
+    for row, model_checkpoint in enumerate(tqdm(model_checkpoints, desc='Plotting Model outputs...')):
         model = load_model(model_checkpoint)
         predictions = predict(model, sample[0])
         plot_predictions(fig, row + 1, predictions, model.model_shortname())
