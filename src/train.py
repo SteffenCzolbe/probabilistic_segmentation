@@ -55,7 +55,7 @@ def cli_main():
     # early stopping
 
     trainer = pl.Trainer.from_argparse_args(
-        args, checkpoint_callback=checkpoint_callback, callbacks=[early_stop_callback])
+        args, checkpoint_callback=checkpointing_callback, callbacks=[early_stop_callback])
     trainer.fit(model, dataset)
 
     # ------------
