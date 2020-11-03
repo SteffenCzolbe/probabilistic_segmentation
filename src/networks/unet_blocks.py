@@ -14,7 +14,6 @@ class DownConvBlock(nn.Module):
         layers = []
 
         if pool:
-            layers.append(nn.Dropout2d(p=p))
             layers.append(nn.AvgPool2d(
                 kernel_size=2, stride=2, padding=0, ceil_mode=True))
 
@@ -25,11 +24,9 @@ class DownConvBlock(nn.Module):
         layers.append(nn.Conv2d(input_dim, output_dim,
                                 kernel_size=3, stride=1, padding=int(padding)))
         layers.append(nn.ReLU(inplace=True))
-        layers.append(nn.Dropout2d(p=p))
         layers.append(nn.Conv2d(output_dim, output_dim,
                                 kernel_size=3, stride=1, padding=int(padding)))
         layers.append(nn.ReLU(inplace=True))
-        layers.append(nn.Dropout2d(p=p))
         layers.append(nn.Conv2d(output_dim, output_dim,
                                 kernel_size=3, stride=1, padding=int(padding)))
         layers.append(nn.ReLU(inplace=True))
@@ -52,7 +49,6 @@ class UpConvBlock(nn.Module):
 
         if not self.bilinear:
             upconv_layer = []
-            upconv_layer.append(nn.Dropout2d(p=p))
             upconv_layer.append(nn.ConvTranspose2d(
                 input_dim, output_dim, kernel_size=2, stride=2))
             self.upconv_layer = nn.Sequential(*upconv_layer)

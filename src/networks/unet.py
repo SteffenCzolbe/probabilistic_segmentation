@@ -43,7 +43,6 @@ class Unet(nn.Module):
 
         if self.apply_last_layer:
             last_layer = []
-            last_layer.append(nn.Dropout2d(p=p))
             last_layer.append(nn.Conv2d(output, num_classes, kernel_size=1))
             self.last_layer = nn.Sequential(*last_layer)
 
