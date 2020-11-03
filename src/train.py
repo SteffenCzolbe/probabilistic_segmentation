@@ -43,7 +43,19 @@ def cli_main():
     # ------------
     # training
     # ------------
-    trainer = pl.Trainer.from_argparse_args(args)
+    # save model with best validation loss
+    checkpointing_callback = pl.callbacks.ModelCheckpoint(monitor='val/loss',
+                                                          mode='min')
+    early_stop_callback = pl.callbacks.EarlyStopping(monitor='val/loss',
+                                                     min_delta=0.00,
+                                                     patience=5,
+                                                     verbose=True,
+                                                     mode='min')
+
+    # early stopping
+
+    trainer = pl.Trainer.from_argparse_args(
+        args, checkpoint_callback=checkpoint_callback, callbacks=[early_stop_callback])
     trainer.fit(model, dataset)
 
     # ------------
