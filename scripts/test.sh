@@ -1,0 +1,1 @@
+python3 -m src.test --model_path trained_models/mcdropout --gpus 0,1
