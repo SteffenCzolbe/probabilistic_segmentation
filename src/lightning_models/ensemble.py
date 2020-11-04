@@ -32,11 +32,12 @@ class Ensemble(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
-        ensemble_loss = 0
+        ensemble_loss = []
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f'train/loss_model_{i}', loss)
-            ensemble_loss += loss
+            ensemble_loss.append(loss)
+        ensemble_loss = torch.stack(ensemble_loss).mean()
 
         self.log('train/loss', ensemble_loss)
         return ensemble_loss
@@ -44,11 +45,12 @@ class Ensemble(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
-        ensemble_loss = 0
+        ensemble_loss = []
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f'val/loss_model_{i}', loss)
-            ensemble_loss += loss
+            ensemble_loss.append(loss)
+        ensemble_loss = torch.stack(ensemble_loss).mean()
 
         self.log('val/loss', ensemble_loss)
         return ensemble_loss
@@ -56,11 +58,12 @@ class Ensemble(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
-        ensemble_loss = 0
+        ensemble_loss = []
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f'test/loss_model_{i}', loss)
-            ensemble_loss += loss
+            ensemble_loss.append(loss)
+        ensemble_loss = torch.stack(ensemble_loss).mean()
 
         self.log('test/loss', ensemble_loss)
         return ensemble_loss
