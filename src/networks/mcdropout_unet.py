@@ -29,11 +29,11 @@ class MCDropoutUnet(nn.Module):
         dropout_layers.append(nn.Conv2d(channels, channels,
                                         kernel_size=3, stride=1, padding=1))
         dropout_layers.append(nn.ReLU())
-        dropout_layers.append(nn.Dropout2d(p=p))
+        # dropout_layers.append(nn.Dropout2d(p=p))
         dropout_layers.append(nn.Conv2d(channels, channels,
                                         kernel_size=3, stride=1, padding=1))
         dropout_layers.append(nn.ReLU())
-        dropout_layers.append(nn.Dropout2d(p=p))
+        # dropout_layers.append(nn.Dropout2d(p=p))
         dropout_layers.append(nn.Conv2d(channels, num_classes,
                                         kernel_size=3, stride=1, padding=1))
 
