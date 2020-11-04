@@ -60,6 +60,7 @@ def cli_main():
     # ------------
     # testing
     # ------------
+    print(model)
     trainer = pl.Trainer.from_argparse_args(args)
     trainer.test(model=model, ckpt_path=checkpoint_path, datamodule=dataset)
 
