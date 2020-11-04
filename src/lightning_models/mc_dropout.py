@@ -3,7 +3,7 @@ import pytorch_lightning as pl
 from argparse import ArgumentParser
 import torch.nn.functional as F
 
-from src.networks.unet import Unet
+from src.networks.mcdropout_unet import MCDropoutUnet
 
 
 class MCDropout(pl.LightningModule):
@@ -11,11 +11,12 @@ class MCDropout(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)
 
-        self.unet = Unet(
+        self.net = MCDropoutUnet(
             input_channels=1,
             num_classes=2,
             num_filters=self.hparams.num_filters,
-            batch_norm=self.hparams.batch_norm
+            batch_norm=self.hparams.batch_norm,
+            p=self.hparams.dropout_prob
         )
 
     def forward(self, x):
@@ -28,11 +29,11 @@ class MCDropout(pl.LightningModule):
             tensor: 1 x C x H x W of probabilities, summing up to 1 across the channel dimension.
         """
         self.train()
-        return F.softmax(self.unet(x), dim=1)
+        return F.softmax(self.net(x), dim=1)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.unet(x)
+        y_hat = self.net(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("train/loss", loss)
         return loss
@@ -40,14 +41,14 @@ class MCDropout(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         self.train()
-        y_hat = self.unet(x)
+        y_hat = self.net(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("val/loss", loss)
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         self.train()
-        y_hat = self.unet(x)
+        y_hat = self.net(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("test/loss", loss)
 
@@ -127,7 +128,7 @@ class MCDropout(pl.LightningModule):
         parser.add_argument(
             "--dropout_prob",
             type=float,
-            default=0,
+            default=0.5,
             help="The probability of setting output to zero.",
         )
         parser.add_argument('--batch_norm', action='store_true',

@@ -186,9 +186,18 @@ class ProbabilisticUnet(nn.Module):
         if not self.training:
             # resample output based on prior, not posterior
             self.forward(x)
-
         reconstruction_loss = F.cross_entropy(self.y_hat_raw, y[:, 0])
 
+        # training loss
         loss = reconstruction_loss + self.beta * kl_loss
 
-        return loss, reconstruction_loss, kl_loss
+        # statictics about prior and posterior
+        mu_prior = self.prior_latent_distribution.mean
+        mu_posterior = self.posterior_latent_distribution.mean
+        mu_dist = torch.norm(mu_prior - mu_posterior, dim=-1).mean()
+        std_prior = self.prior_latent_distribution.stddev
+        std_prior = torch.norm(std_prior - mu_posterior, dim=-1).mean()
+        std_posterior = self.posterior_latent_distribution.stddev
+        std_posterior = torch.norm(std_posterior - mu_posterior, dim=-1).mean()
+
+        return loss, reconstruction_loss, kl_loss, mu_dist, std_prior, std_posterior

@@ -35,26 +35,56 @@ class ProbUnet(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        loss, reconstruction_loss, kl_loss = self.punet.elbo(x, y)
+        (
+            loss,
+            reconstruction_loss,
+            kl_loss,
+            mu_dist,
+            std_prior,
+            std_posterior,
+        ) = self.punet.elbo(x, y)
         self.log("train/loss", loss)
         self.log("train/kl_div", kl_loss)
         self.log("train/recon_loss", reconstruction_loss)
+        self.log("train/mu_dist", mu_dist)
+        self.log("train/std_post_norm", std_posterior)
+        self.log("train/std_prior_norm", std_prior)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        loss, reconstruction_loss, kl_loss = self.punet.elbo(x, y)
+        (
+            loss,
+            reconstruction_loss,
+            kl_loss,
+            mu_dist,
+            std_prior,
+            std_posterior,
+        ) = self.punet.elbo(x, y)
         self.log("val/loss", loss)
         self.log("val/kl_div", kl_loss)
         self.log("val/recon_loss", reconstruction_loss)
+        self.log("val/mu_dist", mu_dist)
+        self.log("val/std_post_norm", std_posterior)
+        self.log("val/std_prior_norm", std_prior)
         return loss
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        loss, reconstruction_loss, kl_loss = self.punet.elbo(x, y)
+        (
+            loss,
+            reconstruction_loss,
+            kl_loss,
+            mu_dist,
+            std_prior,
+            std_posterior,
+        ) = self.punet.elbo(x, y)
         self.log("test/loss", loss)
         self.log("test/kl_div", kl_loss)
         self.log("test/recon_loss", reconstruction_loss)
+        self.log("test/mu_dist", mu_dist)
+        self.log("test/std_post_norm", std_posterior)
+        self.log("test/std_prior_norm", std_prior)
         return loss
 
     def configure_optimizers(self):
