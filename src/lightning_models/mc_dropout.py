@@ -16,15 +16,13 @@ class MCDropout(pl.LightningModule):
             num_classes=2,
             num_filters=self.hparams.num_filters,
             batch_norm=self.hparams.batch_norm,
-            p=self.hparams.dropout_prob
+            p=self.hparams.dropout_prob,
         )
 
     def forward(self, x):
         """perfroms a probability-mask prediction
-
         Args:
             x: the input
-
         Returns:
             tensor: 1 x C x H x W of probabilities, summing up to 1 across the channel dimension.
         """
@@ -53,7 +51,11 @@ class MCDropout(pl.LightningModule):
         self.log("test/loss", loss)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        return torch.optim.Adam(
+            self.parameters(),
+            lr=self.hparams.learning_rate,
+            weight_decay=self.hparams.weight_decay,
+        )
 
     @staticmethod
     def model_name():
@@ -69,11 +71,9 @@ class MCDropout(pl.LightningModule):
 
     def pixel_wise_probabaility(self, x, sample_cnt=16):
         """return the pixel-wise probability map
-
         Args:
             x: the input
             sample_cnt (optional): Amount of samples to draw for internal approximation
-
         Returns:
             tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
         """
@@ -84,27 +84,22 @@ class MCDropout(pl.LightningModule):
 
     def pixel_wise_uncertainty(self, x, sample_cnt=16):
         """return the pixel-wise entropy
-
         Args:
             x: the input
             sample_cnt (optional): Amount of samples to draw for internal approximation
-
         Returns:
             tensor: B x 1 x H x W
         """
+        eps = torch.tensor(10 ** -8).type_as(x)
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        mask = p > 0
-        h = torch.zeros_like(p)
-        h[mask] = torch.log2(1 / p[mask])
-        H = torch.sum(p * h, dim=1, keepdim=True)
-        return H
+        p = torch.max(p, eps)
+        h = torch.sum(-p * torch.log2(p), dim=1, keepdim=True)
+        return h
 
     def sample_prediction(self, x):
         """samples a concrete (thresholded) prediction.
-
         Args:
             x: the input
-
         Returns:
             tensor: B x 1 x H x W, Long type (int) with class labels.
         """
@@ -131,7 +126,17 @@ class MCDropout(pl.LightningModule):
             default=0.5,
             help="The probability of setting output to zero.",
         )
-        parser.add_argument('--batch_norm', action='store_true',
-                            help='Set to use batch normalization during training.')
+        parser.add_argument(
+            "--batch_norm",
+            action="store_true",
+            help="Set to use batch normalization during training.",
+        )
+
+        parser.add_argument(
+            "--weight_decay",
+            type=float,
+            default=0,
+            help="L2 regularization on weights and biases called in Optimizer.",
+        )
 
         return parser
