@@ -11,9 +11,16 @@ class Ensemble(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)
 
-        self.models = torch.nn.ModuleList([Unet(input_channels=1,
-                                                num_classes=2,
-                                                num_filters=self.hparams.num_filters) for _ in range(self.hparams.num_models)])
+        self.models = torch.nn.ModuleList(
+            [
+                Unet(
+                    input_channels=1,
+                    num_classes=2,
+                    num_filters=self.hparams.num_filters,
+                )
+                for _ in range(self.hparams.num_models)
+            ]
+        )
         self.next_model_to_sample = 0
 
     def forward(self, x):
@@ -32,37 +39,38 @@ class Ensemble(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
-        ensemble_loss = 0
+        ensemble_loss = []
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
-            self.log(f'train/loss_model_{i}', loss)
+            self.log(f"train/loss_model_{i}", loss)
             ensemble_loss += loss
 
-        self.log('train/loss', ensemble_loss)
+        self.log("train/loss", ensemble_loss)
         return ensemble_loss
 
     def validation_step(self, batch, batch_idx):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
-        ensemble_loss = 0
+        ensemble_loss = []
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
-            self.log(f'val/loss_model_{i}', loss)
+            self.log(f"val/loss_model_{i}", loss)
             ensemble_loss += loss
 
-        self.log('val/loss', ensemble_loss)
+        self.log("val/loss", ensemble_loss)
         return ensemble_loss
 
     def test_step(self, batch, batch_idx):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
-        ensemble_loss = 0
+        ensemble_loss = []
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
-            self.log(f'test/loss_model_{i}', loss)
-            ensemble_loss += loss
+            self.log(f"test/loss_model_{i}", loss)
+            ensemble_loss.append(loss)
+        ensemble_loss = torch.stack(ensemble_loss).mean()
 
-        self.log('test/loss', ensemble_loss)
+        self.log("test/loss", ensemble_loss)
         return ensemble_loss
 
     def configure_optimizers(self):
@@ -70,11 +78,11 @@ class Ensemble(pl.LightningModule):
 
     @staticmethod
     def model_name():
-        return 'Ensemble'
+        return "Ensemble"
 
     @staticmethod
     def model_shortname():
-        return 'ensemble'
+        return "ensemble"
 
     @staticmethod
     def train_dataset_annotaters_separated():
@@ -102,11 +110,12 @@ class Ensemble(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
-        eps = torch.tensor(10**-8).type_as(x)
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        p = torch.max(p, eps)
-        h = torch.sum(-p * torch.log2(p), dim=1, keepdim=True)
-        return h
+        mask = p > 0
+        h = torch.zeros_like(p)
+        h[mask] = torch.log2(1 / p[mask])
+        H = torch.sum(p * h, dim=1, keepdim=True)
+        return H
 
     def sample_prediction(self, x):
         """samples a concrete (thresholded) prediction.
@@ -119,8 +128,7 @@ class Ensemble(pl.LightningModule):
         """
         model = self.models[self.next_model_to_sample]
 
-        self.next_model_to_sample = (
-            self.next_model_to_sample + 1) % len(self.models)
+        self.next_model_to_sample = (self.next_model_to_sample + 1) % len(self.models)
 
         y = model.forward(x)
         _, pred = y.max(dim=1, keepdim=True)
@@ -129,10 +137,20 @@ class Ensemble(pl.LightningModule):
     @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(
-            parents=[parent_parser], add_help=False, conflict_handler='resolve')
-        parser.add_argument('--num_models', type=int, default=4,
-                            help='Number of ensemble models. Default: 4')
-        parser.add_argument('--num_filters', type=int, nargs='+', default=[
-                            32, 64, 128, 192], help='Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192')
-        parser.add_argument('--learning_rate', type=float, default=0.0001)
+            parents=[parent_parser], add_help=False, conflict_handler="resolve"
+        )
+        parser.add_argument(
+            "--num_models",
+            type=int,
+            default=4,
+            help="Number of ensemble models. Default: 4",
+        )
+        parser.add_argument(
+            "--num_filters",
+            type=int,
+            nargs="+",
+            default=[32, 64, 128, 192],
+            help="Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192",
+        )
+        parser.add_argument("--learning_rate", type=float, default=0.0001)
         return parser

@@ -155,9 +155,8 @@ class ProbabilisticUnet(nn.Module):
 
         # reconstruct image
         self.y_hat_raw = self.fcomb(self.unet_features, self.z)
-        y_hat = torch.sigmoid(self.y_hat_raw)
 
-        return y_hat
+        return self.y_hat_raw
 
     def resample(self):
         """
@@ -167,9 +166,8 @@ class ProbabilisticUnet(nn.Module):
         self.z = self.prior_latent_distribution.sample()
         # reconstruct image
         self.y_hat_raw = self.fcomb(self.unet_features, self.z)
-        y_hat = torch.sigmoid(self.y_hat_raw)
 
-        return y_hat
+        return self.y_hat_raw
 
     def elbo(self, x, y):
         """
