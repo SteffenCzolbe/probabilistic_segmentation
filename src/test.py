@@ -30,7 +30,13 @@ def load_model(model_path):
         checkpoints) == 1, f"An unexpected amount of checkpoints detected! Checkpoints found: {checkpoints}"
     print(f'Loading checkpoint file {checkpoints[0]}')
     model = model_class.load_from_checkpoint(checkpoint_path=checkpoints[0])
-    return model, checkpoints[0]
+
+    dataset_type = hparams["dataset"]
+    dataset_mode = model.train_dataset_annotaters_separated()
+    supported_datasets = util.get_supported_datasets()
+    dataset = supported_datasets[dataset_type](
+        separate_multiple_annotations=dataset_mode)
+    return model, dataset, checkpoints[0]
 
 
 def cli_main():
@@ -49,13 +55,7 @@ def cli_main():
     # ------------
     # model
     # ------------
-    model, checkpoint_path = load_model(args.model_path)
-
-    # ------------
-    # data
-    # ------------
-    dataset_mode = model.train_dataset_annotaters_separated()
-    dataset = LIDCDataModule(separate_multiple_annotations=dataset_mode)
+    model, dataset, checkpoint_path = load_model(args.model_path)
 
     # ------------
     # testing

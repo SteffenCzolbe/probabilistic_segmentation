@@ -26,3 +26,13 @@ def get_supported_models():
     supported_models = dict([(model.model_shortname(), model)
                              for model in supported_models])
     return supported_models
+
+
+def get_supported_datasets():
+    from src.datamodels.lidc_datamodule import LIDCDataModule
+    from src.datamodels.addi_datamodule import ADDIDataModule
+
+    supported_datasets = {'lidc': LIDCDataModule,
+                          'addi': ADDIDataModule}
+
+    return supported_datasets
