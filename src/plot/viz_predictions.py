@@ -3,10 +3,8 @@ from src.datamodels.lidc_datamodule import LIDCDataModule
 from src import util
 from tqdm import tqdm
 import torch
-import yaml
 import os
 import glob
-import re
 
 
 def set_up_figure(model_cnt, sample):
@@ -26,41 +24,10 @@ def set_up_figure(model_cnt, sample):
     return fig
 
 
-def load_sample(datamodule, sample_indx):
+def load_sample(datamodule, idx, device):
     dl = datamodule.test_dataloader()
-    img = dl.dataset[sample_indx]
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    img = dl.dataset[idx]
     return util.to_device(img, device)
-
-
-def load_model(model_path):
-    def find_checkpoints():
-        files = []
-        for fname in glob.glob(os.path.join(model_path, "checkpoints", "*")):
-            if re.match(r".*epoch=[0-9]+.ckpt", fname):
-                files.append(fname)
-        return files
-
-    # read config
-    with open(os.path.join(model_path, "hparams.yaml")) as f:
-        hparams = yaml.load(f, Loader=yaml.Loader)
-    model_type = hparams["model"]
-
-    # load model
-    model_class = util.get_supported_models()[model_type]
-    checkpoints = find_checkpoints()
-    assert len(
-        checkpoints) == 1, f"multiple checkpoints detected!: {checkpoints}"
-    model = model_class.load_from_checkpoint(checkpoint_path=checkpoints[0])
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model.to(device)
-    model.eval()
-
-    dataset_type = hparams["dataset"]
-    supported_datasets = util.get_supported_datasets()
-    datamodule = supported_datasets[dataset_type](
-        separate_multiple_annotations=False)
-    return model, datamodule
 
 
 def predict(model, x):
@@ -98,10 +65,12 @@ def plot_predictions(fig, row, predictions, model_name):
 
 
 def make_fig(model_checkpoints):
-
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     for row, model_checkpoint in enumerate(tqdm(model_checkpoints, desc='Plotting Model outputs...')):
-        model, datamodule = load_model(model_checkpoint)
-        sample = load_sample(datamodule, 0)
+        model = util.load_model_from_checkpoint(model_checkpoint).to(device)
+        datamodule = util.load_datamodule_for_model(
+            model, batch_size=1, separate_multiple_annotations=False)
+        sample = load_sample(datamodule, idx=0, device=device)
         if row == 0:
             fig = set_up_figure(len(model_checkpoints), sample)
         predictions = predict(model, sample[0])
@@ -113,5 +82,5 @@ def make_fig(model_checkpoints):
 
 if __name__ == "__main__":
     # './trained_models/softmax',
-    model_checkpoints = glob.glob("./lightning_logs/version_13*")
+    model_checkpoints = glob.glob("./trained_models/*")
     make_fig(model_checkpoints)
