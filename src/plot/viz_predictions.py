@@ -81,6 +81,5 @@ def make_fig(model_checkpoints):
 
 
 if __name__ == "__main__":
-    # './trained_models/softmax',
     model_checkpoints = glob.glob("./trained_models/*")
     make_fig(model_checkpoints)
