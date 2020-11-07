@@ -69,6 +69,9 @@ class MCDropout(pl.LightningModule):
     def train_dataset_annotaters_separated():
         return True
 
+    def max_unique_samples(self):
+        return float('inf')
+
     def pixel_wise_probabaility(self, x, sample_cnt=16):
         """return the pixel-wise probability map
         Args:

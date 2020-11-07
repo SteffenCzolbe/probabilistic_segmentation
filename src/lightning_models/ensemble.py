@@ -88,6 +88,9 @@ class Ensemble(pl.LightningModule):
     def train_dataset_annotaters_separated():
         return False
 
+    def max_unique_samples(self):
+        return self.hparams.num_models
+
     def pixel_wise_probabaility(self, x, sample_cnt=None):
         """return the pixel-wise probability map
 
@@ -128,7 +131,8 @@ class Ensemble(pl.LightningModule):
         """
         model = self.models[self.next_model_to_sample]
 
-        self.next_model_to_sample = (self.next_model_to_sample + 1) % len(self.models)
+        self.next_model_to_sample = (
+            self.next_model_to_sample + 1) % len(self.models)
 
         y = model.forward(x)
         _, pred = y.max(dim=1, keepdim=True)

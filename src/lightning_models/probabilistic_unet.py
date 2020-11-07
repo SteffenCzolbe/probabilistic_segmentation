@@ -102,6 +102,9 @@ class ProbUnet(pl.LightningModule):
     def train_dataset_annotaters_separated():
         return True
 
+    def max_unique_samples(self):
+        return float('inf')
+
     def pixel_wise_probabaility(self, x, sample_cnt=16):
         """return the pixel-wise probability map
 
@@ -114,7 +117,8 @@ class ProbUnet(pl.LightningModule):
         """
         # we approximate the pixel whise probability by sampling  sample_cnt predictions, then avergaging
         self.sample_prediction(x)
-        ps = [self.resample_prediction_non_threshholded() for _ in range(sample_cnt)]
+        ps = [self.resample_prediction_non_threshholded()
+              for _ in range(sample_cnt)]
         p = torch.stack(ps).mean(dim=0)
         return p
 
