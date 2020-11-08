@@ -4,6 +4,8 @@ from argparse import ArgumentParser, Namespace
 import torch.nn.functional as F
 
 from src.networks.probabilistic_unet import ProbabilisticUnet
+from src.metrics.generalized_energy_distance import generalized_energy_distance
+from src.metrics.soft_dice_loss import heatmap_dice_loss
 
 
 class ProbUnet(pl.LightningModule):
@@ -13,7 +15,7 @@ class ProbUnet(pl.LightningModule):
 
         self.punet = ProbabilisticUnet(
             data_dims=self.hparams.data_dims,
-            num_classes=2,
+            num_classes=self.hparams.data_classes,
             num_filters=self.hparams.num_filters,
             latent_dim=self.hparams.latent_space_dim,
             no_fcomb_layers=4,
@@ -87,6 +89,17 @@ class ProbUnet(pl.LightningModule):
             self.log("test/mu_dist", mu_dist)
             self.log("test/std_post_norm", std_posterior)
             self.log("test/std_prior_norm", std_prior)
+
+        for sample_count in [1, 4, 8, 16]:
+            if sample_count > self.max_unique_samples():
+                break
+            ged = generalized_energy_distance(
+                self, x, ys, sample_count=sample_count)
+            self.log(f"test/ged/{sample_count}", ged)
+
+            dice = heatmap_dice_loss(
+                self, x, ys, sample_count=sample_count)
+            self.log(f"test/diceloss/{sample_count}", dice)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)

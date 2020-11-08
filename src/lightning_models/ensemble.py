@@ -4,6 +4,8 @@ from argparse import ArgumentParser
 import torch.nn.functional as F
 
 from src.networks.unet import Unet
+from src.metrics.generalized_energy_distance import generalized_energy_distance
+from src.metrics.soft_dice_loss import heatmap_dice_loss
 
 
 class Ensemble(pl.LightningModule):
@@ -14,8 +16,8 @@ class Ensemble(pl.LightningModule):
         self.models = torch.nn.ModuleList(
             [
                 Unet(
-                    input_channels=1,
-                    num_classes=2,
+                    input_channels=self.hparams.data_dims[0],
+                    num_classes=self.hparams.data_classes,
                     num_filters=self.hparams.num_filters,
                 )
                 for _ in range(self.hparams.num_models)
@@ -73,7 +75,17 @@ class Ensemble(pl.LightningModule):
         ensemble_loss = torch.stack(ensemble_loss).mean()
 
         self.log("test/loss", ensemble_loss)
-        return ensemble_loss
+
+        for sample_count in [1, 4, 8, 16]:
+            if sample_count > self.max_unique_samples():
+                break
+            ged = generalized_energy_distance(
+                self, x, ys, sample_count=sample_count)
+            self.log(f"test/ged/{sample_count}", ged)
+
+            dice = heatmap_dice_loss(
+                self, x, ys, sample_count=sample_count)
+            self.log(f"test/diceloss/{sample_count}", dice)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -99,7 +111,11 @@ class Ensemble(pl.LightningModule):
         Returns:
             tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
         """
-        return self.forward(x)
+        if sample_cnt is None or sample_cnt >= self.max_unique_samples():
+            return self.forward(x)
+        elif sample_cnt == 1:
+            model_index = torch.randint(self.hparams.num_models, ())
+            return F.softmax(self.models[model_index].forward(x), dim=1)
 
     def pixel_wise_uncertainty(self, x, sample_cnt=None):
         """return the pixel-wise entropy

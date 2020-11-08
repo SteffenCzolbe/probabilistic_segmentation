@@ -4,6 +4,8 @@ from argparse import ArgumentParser
 import torch.nn.functional as F
 
 from src.networks.unet import Unet
+from src.metrics.generalized_energy_distance import generalized_energy_distance
+from src.metrics.soft_dice_loss import heatmap_dice_loss
 
 
 class SoftmaxOutput(pl.LightningModule):
@@ -12,7 +14,8 @@ class SoftmaxOutput(pl.LightningModule):
         self.save_hyperparameters(hparams)
 
         self.unet = Unet(
-            input_channels=1, num_classes=2, num_filters=self.hparams.num_filters
+            input_channels=self.hparams.data_dims[
+                0], num_classes=self.hparams.data_classes, num_filters=self.hparams.num_filters
         )
 
     def forward(self, x):
@@ -48,6 +51,17 @@ class SoftmaxOutput(pl.LightningModule):
         for y in ys:
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log("test/loss", loss)
+
+        for sample_count in [1, 4, 8, 16]:
+            if sample_count > self.max_unique_samples():
+                break
+            ged = generalized_energy_distance(
+                self, x, ys, sample_count=sample_count)
+            self.log(f"test/ged/{sample_count}", ged)
+
+            dice = heatmap_dice_loss(
+                self, x, ys, sample_count=sample_count)
+            self.log(f"test/diceloss/{sample_count}", dice)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)

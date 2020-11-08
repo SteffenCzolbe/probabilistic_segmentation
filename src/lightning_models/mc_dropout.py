@@ -4,6 +4,8 @@ from argparse import ArgumentParser
 import torch.nn.functional as F
 
 from src.networks.mcdropout_unet import MCDropoutUnet
+from src.metrics.generalized_energy_distance import generalized_energy_distance
+from src.metrics.soft_dice_loss import heatmap_dice_loss
 
 
 class MCDropout(pl.LightningModule):
@@ -12,8 +14,8 @@ class MCDropout(pl.LightningModule):
         self.save_hyperparameters(hparams)
 
         self.net = MCDropoutUnet(
-            input_channels=1,
-            num_classes=2,
+            input_channels=self.hparams.data_dims[0],
+            num_classes=self.hparams.data_classes,
             num_filters=self.hparams.num_filters,
             batch_norm=self.hparams.batch_norm,
             p=self.hparams.dropout_prob,
@@ -52,6 +54,17 @@ class MCDropout(pl.LightningModule):
             y_hat = self.net(x)
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log("test/loss", loss)
+
+        for sample_count in [1, 4, 8, 16]:
+            if sample_count > self.max_unique_samples():
+                break
+            ged = generalized_energy_distance(
+                self, x, ys, sample_count=sample_count)
+            self.log(f"test/ged/{sample_count}", ged)
+
+            dice = heatmap_dice_loss(
+                self, x, ys, sample_count=sample_count)
+            self.log(f"test/diceloss/{sample_count}", dice)
 
     def configure_optimizers(self):
         return torch.optim.Adam(
