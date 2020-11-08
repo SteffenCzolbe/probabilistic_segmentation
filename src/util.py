@@ -29,13 +29,12 @@ def get_supported_datamodules():
     return supported_datamodels
 
 
-def load_damodule(dataset_name, batch_size=32, separate_multiple_annotations=True):
+def load_damodule(dataset_name, batch_size=32):
     """Loads a Datamodule
 
     Args:
         dataset_name (str): Name of dataset
         batch_size (int, optional): Batch size. Defaults to 32.
-        separate_multiple_annotations (bool, optional): Defaults to True.
 
     Returns:
         Datamodule
@@ -45,25 +44,21 @@ def load_damodule(dataset_name, batch_size=32, separate_multiple_annotations=Tru
         raise Exception(
             f'Dataset {dataset_name} unknown. Supported datasets: {supported_datamodels.keys()}')
 
-    datamodule = supported_datamodels[dataset_name](batch_size=batch_size,
-                                                    separate_multiple_annotations=separate_multiple_annotations)
+    datamodule = supported_datamodels[dataset_name](batch_size=batch_size)
 
     return datamodule
 
 
-def load_datamodule_for_model(model, batch_size=None, separate_multiple_annotations=None):
+def load_datamodule_for_model(model, batch_size=None):
     """Loads the datamodule for the model. kwargs set will overwrite model defaults.
 
     Args:
         model: The model
         batchsize (bool, optional): Set to overwrite batch size.
-        separate_multiple_annotations (bool, optional): Set to overwrite annotation split
     """
     batch_size = batch_size if batch_size is not None else model.hparams.batch_size
-    separate_multiple_annotations = separate_multiple_annotations if separate_multiple_annotations is not None else model.train_dataset_annotaters_separated()
     datamodule_name = model.hparams.dataset
-    return load_damodule(datamodule_name, batch_size=batch_size,
-                         separate_multiple_annotations=separate_multiple_annotations)
+    return load_damodule(datamodule_name, batch_size=batch_size)
 
 
 def get_checkpoint_path(model_path):

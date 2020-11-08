@@ -34,7 +34,8 @@ class ProbUnet(pl.LightningModule):
         return F.softmax(self.punet(x), dim=1)
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        x, ys = batch
+        y = ys[torch.randint(len(ys), ())]
         (
             loss,
             reconstruction_loss,
@@ -52,40 +53,40 @@ class ProbUnet(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
-        (
-            loss,
-            reconstruction_loss,
-            kl_loss,
-            mu_dist,
-            std_prior,
-            std_posterior,
-        ) = self.punet.elbo(x, y)
-        self.log("val/loss", loss)
-        self.log("val/kl_div", kl_loss)
-        self.log("val/recon_loss", reconstruction_loss)
-        self.log("val/mu_dist", mu_dist)
-        self.log("val/std_post_norm", std_posterior)
-        self.log("val/std_prior_norm", std_prior)
-        return loss
+        x, ys = batch
+        for y in ys:
+            (
+                loss,
+                reconstruction_loss,
+                kl_loss,
+                mu_dist,
+                std_prior,
+                std_posterior,
+            ) = self.punet.elbo(x, y)
+            self.log("val/loss", loss)
+            self.log("val/kl_div", kl_loss)
+            self.log("val/recon_loss", reconstruction_loss)
+            self.log("val/mu_dist", mu_dist)
+            self.log("val/std_post_norm", std_posterior)
+            self.log("val/std_prior_norm", std_prior)
 
     def test_step(self, batch, batch_idx):
-        x, y = batch
-        (
-            loss,
-            reconstruction_loss,
-            kl_loss,
-            mu_dist,
-            std_prior,
-            std_posterior,
-        ) = self.punet.elbo(x, y)
-        self.log("test/loss", loss)
-        self.log("test/kl_div", kl_loss)
-        self.log("test/recon_loss", reconstruction_loss)
-        self.log("test/mu_dist", mu_dist)
-        self.log("test/std_post_norm", std_posterior)
-        self.log("test/std_prior_norm", std_prior)
-        return loss
+        x, ys = batch
+        for y in ys:
+            (
+                loss,
+                reconstruction_loss,
+                kl_loss,
+                mu_dist,
+                std_prior,
+                std_posterior,
+            ) = self.punet.elbo(x, y)
+            self.log("test/loss", loss)
+            self.log("test/kl_div", kl_loss)
+            self.log("test/recon_loss", reconstruction_loss)
+            self.log("test/mu_dist", mu_dist)
+            self.log("test/std_post_norm", std_posterior)
+            self.log("test/std_prior_norm", std_prior)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -97,10 +98,6 @@ class ProbUnet(pl.LightningModule):
     @staticmethod
     def model_shortname():
         return "punet"
-
-    @staticmethod
-    def train_dataset_annotaters_separated():
-        return True
 
     def max_unique_samples(self):
         return float('inf')

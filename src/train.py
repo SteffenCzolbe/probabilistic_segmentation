@@ -32,15 +32,13 @@ def cli_main():
     # ------------
     # data
     # ------------
-    model_cls = util.get_model_cls(args.model)
-    dataset_mode = model_cls.train_dataset_annotaters_separated()
-    dataset = util.load_damodule(
-        args.dataset, batch_size=args.batch_size, separate_multiple_annotations=dataset_mode)
+    dataset = util.load_damodule(args.dataset, batch_size=args.batch_size)
     args.data_dims = dataset.dims
 
     # ------------
     # model
     # ------------
+    model_cls = util.get_model_cls(args.model)
     model = model_cls(args)
 
     # ------------
@@ -64,7 +62,7 @@ def cli_main():
     # testing
     # ------------
     if not args.notest:
-        trainer.test(logger=model.logger)
+        trainer.test()
 
 
 if __name__ == '__main__':

@@ -86,10 +86,6 @@ class Ensemble(pl.LightningModule):
     def model_shortname():
         return "ensemble"
 
-    @staticmethod
-    def train_dataset_annotaters_separated():
-        return False
-
     def max_unique_samples(self):
         return self.hparams.num_models
 

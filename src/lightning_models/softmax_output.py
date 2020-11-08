@@ -28,38 +28,37 @@ class SoftmaxOutput(pl.LightningModule):
         return F.softmax(y, dim=1)
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        x, ys = batch
+        y = ys[torch.randint(len(ys), ())]
         y_hat = self.unet(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("train/loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
+        x, ys = batch
         y_hat = self.unet(x)
-        loss = F.cross_entropy(y_hat, y[:, 0])
-        self.log("val/loss", loss)
+        for y in ys:
+            loss = F.cross_entropy(y_hat, y[:, 0])
+            self.log("val/loss", loss)
 
     def test_step(self, batch, batch_idx):
-        x, y = batch
+        x, ys = batch
         y_hat = self.unet(x)
-        loss = F.cross_entropy(y_hat, y[:, 0])
-        self.log("test/loss", loss)
+        for y in ys:
+            loss = F.cross_entropy(y_hat, y[:, 0])
+            self.log("test/loss", loss)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
-    @staticmethod
+    @ staticmethod
     def model_name():
         return "Softmax Output"
 
-    @staticmethod
+    @ staticmethod
     def model_shortname():
         return "softm"
-
-    @staticmethod
-    def train_dataset_annotaters_separated():
-        return True
 
     def max_unique_samples(self):
         return 1
@@ -106,7 +105,7 @@ class SoftmaxOutput(pl.LightningModule):
         _, pred = y.max(dim=1, keepdim=True)
         return pred
 
-    @staticmethod
+    @ staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(
             parents=[parent_parser], add_help=False, conflict_handler="resolve"

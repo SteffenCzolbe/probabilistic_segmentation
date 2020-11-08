@@ -30,25 +30,28 @@ class MCDropout(pl.LightningModule):
         return F.softmax(self.net(x), dim=1)
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        x, ys = batch
+        y = ys[torch.randint(len(ys), ())]
         y_hat = self.net(x)
         loss = F.cross_entropy(y_hat, y[:, 0])
         self.log("train/loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
         self.train()
-        y_hat = self.net(x)
-        loss = F.cross_entropy(y_hat, y[:, 0])
-        self.log("val/loss", loss)
+        x, ys = batch
+        for y in ys:
+            y_hat = self.net(x)
+            loss = F.cross_entropy(y_hat, y[:, 0])
+            self.log("val/loss", loss)
 
     def test_step(self, batch, batch_idx):
-        x, y = batch
         self.train()
-        y_hat = self.net(x)
-        loss = F.cross_entropy(y_hat, y[:, 0])
-        self.log("test/loss", loss)
+        x, ys = batch
+        for y in ys:
+            y_hat = self.net(x)
+            loss = F.cross_entropy(y_hat, y[:, 0])
+            self.log("test/loss", loss)
 
     def configure_optimizers(self):
         return torch.optim.Adam(
@@ -64,10 +67,6 @@ class MCDropout(pl.LightningModule):
     @staticmethod
     def model_shortname():
         return "mcdropout"
-
-    @staticmethod
-    def train_dataset_annotaters_separated():
-        return True
 
     def max_unique_samples(self):
         return float('inf')

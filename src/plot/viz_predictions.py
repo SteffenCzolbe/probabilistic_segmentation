@@ -69,8 +69,8 @@ def make_fig(model_checkpoints):
     for row, model_checkpoint in enumerate(tqdm(model_checkpoints, desc='Plotting Model outputs...')):
         model = util.load_model_from_checkpoint(model_checkpoint).to(device)
         datamodule = util.load_datamodule_for_model(
-            model, batch_size=1, separate_multiple_annotations=False)
-        sample = load_sample(datamodule, idx=0, device=device)
+            model, batch_size=1)
+        sample = load_sample(datamodule, idx=421, device=device)
         if row == 0:
             fig = set_up_figure(len(model_checkpoints), sample)
         predictions = predict(model, sample[0])
