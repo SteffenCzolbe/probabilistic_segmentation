@@ -1,14 +1,8 @@
 import pytorch_lightning as pl
 from argparse import ArgumentParser
-
-from src.lightning_models.softmax_output import SoftmaxOutput
-from src.datamodels.lidc_datamodule import LIDCDataModule
-from src.metrics.generalized_energy_distance import generalized_energy_distance
 import src.util as util
 import os
 import json
-from collections import defaultdict
-import torch
 
 
 def cli_main():
