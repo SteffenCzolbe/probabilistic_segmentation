@@ -23,6 +23,7 @@ class LIDCDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
 
         self.dims = (1, 128, 128)
+        self.classes = 2
         self.augment = RandomAffine()
         self.transform = transforms.Compose([
             transforms.ToTensor(),
