@@ -43,7 +43,8 @@ class Ensemble(pl.LightningModule):
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f"train/loss_model_{i}", loss)
-            ensemble_loss += loss
+            ensemble_loss.append(loss)
+        ensemble_loss = torch.stack(ensemble_loss).mean()
 
         self.log("train/loss", ensemble_loss)
         return ensemble_loss
@@ -55,7 +56,8 @@ class Ensemble(pl.LightningModule):
         for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f"val/loss_model_{i}", loss)
-            ensemble_loss += loss
+            ensemble_loss.append(loss)
+        ensemble_loss = torch.stack(ensemble_loss).mean()
 
         self.log("val/loss", ensemble_loss)
         return ensemble_loss
