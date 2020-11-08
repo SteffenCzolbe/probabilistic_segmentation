@@ -21,6 +21,9 @@ def cli_main():
                         type=int, help='Batchsize. Default 64.')
     parser.add_argument('--learning_rate', default=0.0001,
                         type=float, help='Learning rate. Default 0.0001')
+    parser.add_argument(
+        "--notest", action="store_true", help="Set to not run test after training."
+    )
     parser = pl.Trainer.add_argparse_args(parser)
     for model in util.get_supported_models().values():
         parser = model.add_model_specific_args(parser)
@@ -60,7 +63,8 @@ def cli_main():
     # ------------
     # testing
     # ------------
-    trainer.test()
+    if not args.notest:
+        trainer.test(logger=model.logger)
 
 
 if __name__ == '__main__':
