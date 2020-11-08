@@ -3,11 +3,12 @@ from argparse import ArgumentParser
 
 from src.lightning_models.softmax_output import SoftmaxOutput
 from src.datamodels.lidc_datamodule import LIDCDataModule
+from src.metrics.generalized_energy_distance import generalized_energy_distance
 import src.util as util
 import os
-import yaml
-import glob
-import re
+import json
+from collections import defaultdict
+import torch
 
 
 def cli_main():
@@ -20,6 +21,8 @@ def cli_main():
     parser = ArgumentParser()
     parser.add_argument(
         '--model_path', type=str, help=f'Path to the trained model.')
+    parser.add_argument(
+        '--file', type=str, default='./plots/experiment_results.json', help=f'File to save the results in.')
     parser = pl.Trainer.add_argparse_args(parser)
     args = parser.parse_args()
 
@@ -31,11 +34,34 @@ def cli_main():
     datamodule = util.load_datamodule_for_model(model)
 
     # ------------
-    # testing
+    # file
+    # ------------
+    if os.path.isfile(args.file):
+        with open(args.file) as f:
+            test_results = json.load(f)
+    else:
+        test_results = {}
+    test_results[args.model_path] = {}
+    test_results[args.model_path]['model_name'] = model.model_name()
+    test_results[args.model_path]['model_shortname'] = model.model_shortname()
+
+    # ------------
+    # Run model test script
     # ------------
     print(model)
     trainer = pl.Trainer.from_argparse_args(args)
-    trainer.test(model=model, ckpt_path=checkpoint_path, datamodule=datamodule)
+    test_metrics = trainer.test(
+        model=model, ckpt_path=checkpoint_path, datamodule=datamodule)
+    for k, v in test_metrics[0].items():
+        test_results[args.model_path][k] = v
+
+    # ------------
+    # save results
+    # ------------
+    print('Test results:')
+    print(json.dumps(test_results[args.model_path], indent=4, sort_keys=True))
+    with open(args.file, 'w') as json_file:
+        json.dump(test_results, json_file, indent=4, sort_keys=True)
 
 
 if __name__ == '__main__':
