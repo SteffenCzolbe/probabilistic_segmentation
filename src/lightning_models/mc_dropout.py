@@ -47,6 +47,19 @@ class MCDropout(pl.LightningModule):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log("val/loss", loss)
 
+        # calculate aditional metrics every 5 epochs
+        if self.current_epoch % 5 == 0:
+            for sample_count in [1, 4, 8, 16]:
+                if sample_count > self.max_unique_samples():
+                    break
+                ged = generalized_energy_distance(
+                    self, x, ys, sample_count=sample_count)
+                self.log(f"val/ged/{sample_count}", ged)
+
+                dice = heatmap_dice_loss(
+                    self, x, ys, sample_count=sample_count)
+                self.log(f"val/diceloss/{sample_count}", dice)
+
     def test_step(self, batch, batch_idx):
         self.train()
         x, ys = batch

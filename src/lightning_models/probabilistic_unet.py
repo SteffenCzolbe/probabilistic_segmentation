@@ -72,6 +72,19 @@ class ProbUnet(pl.LightningModule):
             self.log("val/std_post_norm", std_posterior)
             self.log("val/std_prior_norm", std_prior)
 
+        # calculate aditional metrics every 5 epochs
+        if self.current_epoch % 5 == 0:
+            for sample_count in [1, 4, 8, 16]:
+                if sample_count > self.max_unique_samples():
+                    break
+                ged = generalized_energy_distance(
+                    self, x, ys, sample_count=sample_count)
+                self.log(f"val/ged/{sample_count}", ged)
+
+                dice = heatmap_dice_loss(
+                    self, x, ys, sample_count=sample_count)
+                self.log(f"val/diceloss/{sample_count}", dice)
+
     def test_step(self, batch, batch_idx):
         x, ys = batch
         for y in ys:

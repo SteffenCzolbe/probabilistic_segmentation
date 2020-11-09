@@ -62,6 +62,20 @@ class Ensemble(pl.LightningModule):
         ensemble_loss = torch.stack(ensemble_loss).mean()
 
         self.log("val/loss", ensemble_loss)
+
+        # calculate aditional metrics every 5 epochs
+        if self.current_epoch % 5 == 0:
+            for sample_count in [1, 4, 8, 16]:
+                if sample_count > self.max_unique_samples():
+                    break
+                ged = generalized_energy_distance(
+                    self, x, ys, sample_count=sample_count)
+                self.log(f"val/ged/{sample_count}", ged)
+
+                dice = heatmap_dice_loss(
+                    self, x, ys, sample_count=sample_count)
+                self.log(f"val/diceloss/{sample_count}", dice)
+
         return ensemble_loss
 
     def test_step(self, batch, batch_idx):
