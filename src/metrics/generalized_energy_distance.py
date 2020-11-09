@@ -41,13 +41,13 @@ def ged(samples_a, samples_b):
                         for i, j in product(idx_a, idx_b)]).mean(dim=0)
     if len(samples_a) > 1:
         e_aa = torch.stack([1 - iou(samples_a[i], samples_a[j])
-                            for i, j in combinations(idx_a, 2)]).mean(dim=0)
+                            for i, j in product(idx_a, idx_a)]).mean(dim=0)
     else:
         e_aa = 0
 
     if len(samples_b) > 1:
         e_bb = torch.stack([1 - iou(samples_b[i], samples_b[j])
-                            for i, j in combinations(idx_b, 2)]).mean(dim=0)
+                            for i, j in product(idx_b, idx_b)]).mean(dim=0)
     else:
         e_bb = 0
 
