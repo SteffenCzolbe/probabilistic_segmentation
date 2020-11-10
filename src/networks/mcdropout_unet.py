@@ -26,16 +26,8 @@ class MCDropoutUnet(nn.Module):
         channels = num_filters[0]
         dropout_layers = []
         dropout_layers.append(nn.Dropout2d(p=p))
-        dropout_layers.append(nn.Conv2d(channels, channels,
-                                        kernel_size=3, stride=1, padding=1))
-        dropout_layers.append(nn.ReLU())
-        # dropout_layers.append(nn.Dropout2d(p=p))
-        dropout_layers.append(nn.Conv2d(channels, channels,
-                                        kernel_size=3, stride=1, padding=1))
-        dropout_layers.append(nn.ReLU())
-        # dropout_layers.append(nn.Dropout2d(p=p))
         dropout_layers.append(nn.Conv2d(channels, num_classes,
-                                        kernel_size=3, stride=1, padding=1))
+                                        kernel_size=1, stride=1, padding=0))
 
         self.dropout_net = nn.Sequential(*dropout_layers)
 
