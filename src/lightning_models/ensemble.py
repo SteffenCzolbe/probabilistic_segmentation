@@ -125,11 +125,13 @@ class Ensemble(pl.LightningModule):
         Returns:
             tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
         """
-        if sample_cnt is None or sample_cnt >= self.max_unique_samples():
+        if sample_cnt is None:
+            # draw all samples
             return self.forward(x)
-        elif sample_cnt == 1:
-            model_index = torch.randint(self.hparams.num_models, ())
-            return F.softmax(self.models[model_index].forward(x), dim=1)
+        else:
+            ps = [F.softmax(self.models[torch.randint(self.hparams.num_models, ())].forward(x), dim=1)
+                  for _ in range(sample_cnt)]
+            return torch.stack(ps).mean(dim=0)
 
     def pixel_wise_uncertainty(self, x, sample_cnt=None):
         """return the pixel-wise entropy
@@ -157,10 +159,7 @@ class Ensemble(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W, Long type (int) with class labels.
         """
-        model = self.models[self.next_model_to_sample]
-
-        self.next_model_to_sample = (
-            self.next_model_to_sample + 1) % len(self.models)
+        model = self.models[torch.randint(self.hparams.num_models, ())]
 
         y = model.forward(x)
         _, pred = y.max(dim=1, keepdim=True)
