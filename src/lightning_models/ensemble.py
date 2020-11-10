@@ -66,8 +66,6 @@ class Ensemble(pl.LightningModule):
         # calculate aditional metrics every 5 epochs
         if self.current_epoch % 5 == 0:
             for sample_count in [1, 4, 8, 16]:
-                if sample_count > self.max_unique_samples():
-                    break
                 ged = generalized_energy_distance(
                     self, x, ys, sample_count=sample_count)
                 self.log(f"val/ged/{sample_count}", ged)
@@ -91,8 +89,6 @@ class Ensemble(pl.LightningModule):
         self.log("test/loss", ensemble_loss)
 
         for sample_count in [1, 4, 8, 16]:
-            if sample_count > self.max_unique_samples():
-                break
             ged = generalized_energy_distance(
                 self, x, ys, sample_count=sample_count)
             self.log(f"test/ged/{sample_count}", ged)

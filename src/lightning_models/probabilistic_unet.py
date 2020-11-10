@@ -75,8 +75,6 @@ class ProbUnet(pl.LightningModule):
         # calculate aditional metrics every 5 epochs
         if self.current_epoch % 5 == 0:
             for sample_count in [1, 4, 8, 16]:
-                if sample_count > self.max_unique_samples():
-                    break
                 ged = generalized_energy_distance(
                     self, x, ys, sample_count=sample_count)
                 self.log(f"val/ged/{sample_count}", ged)
@@ -104,8 +102,6 @@ class ProbUnet(pl.LightningModule):
             self.log("test/std_prior_norm", std_prior)
 
         for sample_count in [1, 4, 8, 16]:
-            if sample_count > self.max_unique_samples():
-                break
             ged = generalized_energy_distance(
                 self, x, ys, sample_count=sample_count)
             self.log(f"test/ged/{sample_count}", ged)
