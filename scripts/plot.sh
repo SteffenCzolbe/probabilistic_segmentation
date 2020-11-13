@@ -1,1 +1,1 @@
-python3 -m src.plot.viz_predictions
+python3 -m src.plot.viz_predictions --model_dir trained_models/lidc --output_file plots/predictions_lidc.png
