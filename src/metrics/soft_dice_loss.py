@@ -5,12 +5,13 @@ def dice_loss(input, target, eps=1e-6):
     if target.max() > 1:
         raise Exception('Dice is only implemented for 2 classes')
 
-    iflat = input.view(-1)
-    tflat = target.view(-1)
-    intersection = (iflat * tflat).sum()
+    B = input.shape[0]
+    iflat = input.view(B, -1)
+    tflat = target.view(B, -1)
+    intersection = (iflat * tflat).sum(dim=1)
 
     return 1 - ((2. * intersection + eps) /
-                (iflat.sum() + tflat.sum() + eps))
+                (iflat.sum(dim=1) + tflat.sum(dim=1) + eps))
 
 
 def heatmap_dice_loss(model, x, ys, sample_count=16):
