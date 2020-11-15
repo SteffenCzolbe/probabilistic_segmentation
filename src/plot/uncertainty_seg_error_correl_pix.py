@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--model', type=str, help='Model to plot')
     parser.add_argument(
-        '--test_results_file', type=str, help='File with test results.')
+        '--test_results_file', type=str, default='plots/experiment_results.pickl', help='File with test results.')
     parser.add_argument(
         '--output_file', type=str, nargs="+", help='File to save the results in.')
     args = parser.parse_args()
