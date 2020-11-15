@@ -4,7 +4,11 @@ python3 -m src.plot.viz_predictions --model_dir trained_models/lidc --output_fil
 # GED-plot
 python3 -m src.plot.ged_plot --dataset lidc --output_file plots/ged.png plots/ged.pdf
 
+
 # Uncertainty - Seg error correlation
+python3 -m src.plot.correlation --dataset lidc --output_file plots/correlation.png plots/correlation.pdf
+
+# Uncertainty - Seg error correlation per pixel
 DATASET=lidc
 for MODEL in softm ensemble mcdropout punet
     do
