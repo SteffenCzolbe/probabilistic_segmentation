@@ -2,6 +2,7 @@ venv
 lightning_logs*
 trained_models*
 .vscode
+plots/experiment_results.pickl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
