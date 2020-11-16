@@ -4,7 +4,7 @@ import os
 
 
 def download_file_from_google_drive(id, destination):
-    URL = url = 'https://drive.google.com/uc?id=177yYDuvWxpt65jn1uWE2YY3ye2_hfA34'
+    URL = 'https://drive.google.com/uc?id=177yYDuvWxpt65jn1uWE2YY3ye2_hfA34'
     session = requests.Session()
 
     response = session.get(URL, params={'id': id}, stream=True)
