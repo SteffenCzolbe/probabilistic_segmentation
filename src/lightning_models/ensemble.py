@@ -2,6 +2,7 @@ import torch
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 import torch.nn.functional as F
+from itertools import cycle
 
 from src.networks.unet import Unet
 from src.metrics.generalized_energy_distance import generalized_energy_distance
@@ -42,7 +43,8 @@ class Ensemble(pl.LightningModule):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
         ensemble_loss = []
-        for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
+        # We cycle through constituent models and ground truth annotations, repeating annotations if nessesary
+        for i, (y_hat, y) in enumerate(zip(y_hats, cycle(ys))):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f"train/loss_model_{i}", loss)
             ensemble_loss.append(loss)
@@ -55,7 +57,8 @@ class Ensemble(pl.LightningModule):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
         ensemble_loss = []
-        for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
+        # We cycle through constituent models and ground truth annotations, repeating annotations if nessesary
+        for i, (y_hat, y) in enumerate(zip(y_hats, cycle(ys))):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f"val/loss_model_{i}", loss)
             ensemble_loss.append(loss)
@@ -80,7 +83,8 @@ class Ensemble(pl.LightningModule):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
         ensemble_loss = []
-        for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
+        # We cycle through constituent models and ground truth annotations, repeating annotations if nessesary
+        for i, (y_hat, y) in enumerate(zip(y_hats, cycle(ys))):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f"test/loss_model_{i}", loss)
             ensemble_loss.append(loss)
