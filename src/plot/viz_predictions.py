@@ -5,6 +5,7 @@ from tqdm import tqdm
 import torch
 import os
 import glob
+from argparse import ArgumentParser
 
 
 def set_up_figure(model_cnt, sample):
@@ -17,10 +18,8 @@ def set_up_figure(model_cnt, sample):
     )
     fig.plot_img(0, 0, sample[0], title="Image", vmin=0, vmax=1)
 
-    fig.plot_img(0, 1, sample[1][0], title="l_0", vmin=0, vmax=1)
-    fig.plot_img(0, 2, sample[1][1], title="l_1", vmin=0, vmax=1)
-    fig.plot_img(0, 3, sample[1][2], title="l_2", vmin=0, vmax=1)
-    fig.plot_img(0, 4, sample[1][3], title="l_3", vmin=0, vmax=1)
+    for i in range(len(sample[1])):
+        fig.plot_img(0, 1, sample[1][i], title=f"l_{i}", vmin=0, vmax=1)
     return fig
 
 
@@ -64,22 +63,29 @@ def plot_predictions(fig, row, predictions, model_name):
         )
 
 
-def make_fig(model_checkpoints):
+def make_fig(model_checkpoints, output_file):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     for row, model_checkpoint in enumerate(tqdm(model_checkpoints, desc='Plotting Model outputs...')):
         model = util.load_model_from_checkpoint(model_checkpoint).to(device)
         datamodule = util.load_datamodule_for_model(
             model, batch_size=1)
-        sample = load_sample(datamodule, idx=421, device=device)
+        sample = load_sample(datamodule, idx=0, device=device)
         if row == 0:
             fig = set_up_figure(len(model_checkpoints), sample)
         predictions = predict(model, sample[0])
         plot_predictions(fig, row + 1, predictions, model.model_shortname())
 
     os.makedirs("./plots/", exist_ok=True)
-    fig.save("./plots/predictions.png")
+    fig.save(output_file)
 
 
 if __name__ == "__main__":
-    model_checkpoints = glob.glob("./trained_models/*")
-    make_fig(model_checkpoints)
+    parser = ArgumentParser()
+    parser.add_argument(
+        '--model_dir', type=str, help='Directory of trained models.')
+    parser.add_argument(
+        '--output_file', type=str, help='File to save the results in.')
+    args = parser.parse_args()
+
+    model_checkpoints = glob.glob(os.path.join(args.model_dir, '*'))
+    make_fig(model_checkpoints, args.output_file)

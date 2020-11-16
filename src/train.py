@@ -34,6 +34,7 @@ def cli_main():
     # ------------
     dataset = util.load_damodule(args.dataset, batch_size=args.batch_size)
     args.data_dims = dataset.dims
+    args.data_classes = dataset.classes
 
     # ------------
     # model

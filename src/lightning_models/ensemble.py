@@ -2,8 +2,11 @@ import torch
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 import torch.nn.functional as F
+from itertools import cycle
 
 from src.networks.unet import Unet
+from src.metrics.generalized_energy_distance import generalized_energy_distance
+from src.metrics.soft_dice_loss import heatmap_dice_loss
 
 
 class Ensemble(pl.LightningModule):
@@ -14,8 +17,8 @@ class Ensemble(pl.LightningModule):
         self.models = torch.nn.ModuleList(
             [
                 Unet(
-                    input_channels=1,
-                    num_classes=2,
+                    input_channels=self.hparams.data_dims[0],
+                    num_classes=self.hparams.data_classes,
                     num_filters=self.hparams.num_filters,
                 )
                 for _ in range(self.hparams.num_models)
@@ -40,7 +43,8 @@ class Ensemble(pl.LightningModule):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
         ensemble_loss = []
-        for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
+        # We cycle through constituent models and ground truth annotations, repeating annotations if nessesary
+        for i, (y_hat, y) in enumerate(zip(y_hats, cycle(ys))):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f"train/loss_model_{i}", loss)
             ensemble_loss.append(loss)
@@ -53,27 +57,49 @@ class Ensemble(pl.LightningModule):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
         ensemble_loss = []
-        for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
+        # We cycle through constituent models and ground truth annotations, repeating annotations if nessesary
+        for i, (y_hat, y) in enumerate(zip(y_hats, cycle(ys))):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f"val/loss_model_{i}", loss)
             ensemble_loss.append(loss)
         ensemble_loss = torch.stack(ensemble_loss).mean()
 
         self.log("val/loss", ensemble_loss)
+
+        # calculate aditional metrics every 5 epochs
+        if self.current_epoch % 5 == 0:
+            for sample_count in [1, 4, 8, 16]:
+                ged = generalized_energy_distance(
+                    self, x, ys, sample_count=sample_count)
+                self.log(f"val/ged/{sample_count}", ged)
+
+                dice = heatmap_dice_loss(
+                    self, x, ys, sample_count=sample_count)
+                self.log(f"val/diceloss/{sample_count}", dice)
+
         return ensemble_loss
 
     def test_step(self, batch, batch_idx):
         x, ys = batch
         y_hats = [model.forward(x) for model in self.models]
         ensemble_loss = []
-        for i, (y_hat, y) in enumerate(zip(y_hats, ys)):
+        # We cycle through constituent models and ground truth annotations, repeating annotations if nessesary
+        for i, (y_hat, y) in enumerate(zip(y_hats, cycle(ys))):
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log(f"test/loss_model_{i}", loss)
             ensemble_loss.append(loss)
         ensemble_loss = torch.stack(ensemble_loss).mean()
 
         self.log("test/loss", ensemble_loss)
-        return ensemble_loss
+
+        for sample_count in [1, 4, 8, 16]:
+            ged = generalized_energy_distance(
+                self, x, ys, sample_count=sample_count)
+            self.log(f"test/ged/{sample_count}", ged)
+
+            dice = heatmap_dice_loss(
+                self, x, ys, sample_count=sample_count)
+            self.log(f"test/diceloss/{sample_count}", dice)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -99,7 +125,13 @@ class Ensemble(pl.LightningModule):
         Returns:
             tensor: B x C x H x W, with probability values summing up to 1 across the channel dimension.
         """
-        return self.forward(x)
+        if sample_cnt is None:
+            # draw all samples
+            return self.forward(x)
+        else:
+            ps = [F.softmax(self.models[torch.randint(self.hparams.num_models, ())].forward(x), dim=1)
+                  for _ in range(sample_cnt)]
+            return torch.stack(ps).mean(dim=0)
 
     def pixel_wise_uncertainty(self, x, sample_cnt=None):
         """return the pixel-wise entropy
@@ -127,10 +159,7 @@ class Ensemble(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W, Long type (int) with class labels.
         """
-        model = self.models[self.next_model_to_sample]
-
-        self.next_model_to_sample = (
-            self.next_model_to_sample + 1) % len(self.models)
+        model = self.models[torch.randint(self.hparams.num_models, ())]
 
         y = model.forward(x)
         _, pred = y.max(dim=1, keepdim=True)

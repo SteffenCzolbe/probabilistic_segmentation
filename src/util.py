@@ -21,10 +21,10 @@ def to_device(obj, device):
 
 def get_supported_datamodules():
     from src.datamodels.lidc_datamodule import LIDCDataModule
-    from src.datamodels.addi_datamodule import ADDIDataModule
+    from src.datamodels.isic18_datamodule import ISIC18DataModule
 
     supported_datamodels = {'lidc': LIDCDataModule,
-                            'addi': ADDIDataModule}
+                            'isic18': ISIC18DataModule}
 
     return supported_datamodels
 
