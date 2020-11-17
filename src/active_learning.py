@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 from argparse import ArgumentParser
 import src.util as util
 import torch
-from src.plot.viz_predictions import load_sample
+import matplotlib.pyplot as plt
 
 
 def main():
@@ -69,6 +69,7 @@ def main():
     # ------------
     dataset = util.load_damodule(args.dataset, batch_size=args.batch_size)
     args.data_dims = dataset.dims
+    args.data_classes = dataset.classes
 
     # ------------
     # active_learning
@@ -88,7 +89,8 @@ def main():
         trainer = ResetTrainer().trainer
         trainer.fit(model, dataset)
         test_loss[strategy].append(trainer.test()[0]["test/loss"])
-        for _ in range(args.num_iters):
+        for i in range(args.num_iters):
+            print(f"{strategy}************{i}/{args.num_iter}***********")
             with torch.no_grad():
                 if strategy == "random":
                     mask.append(torch.randint(size_Q, size=(1,)))
@@ -109,7 +111,18 @@ def main():
             trainer.fit(model, dataset)
             test_loss[strategy].append(trainer.test()[0]["test/loss"])
 
-        print(test_loss)
+    # ------------
+    # plot
+    # ------------
+    plt.figure()
+    plt.plot(test_loss["random"], label="random sampling")
+    plt.plot(test_loss["output_uncertainty"], label="uncertainty sampling")
+    plt.grid()
+    plt.legend()
+    plt.xlabel("Iterations of active learning")
+    plt.ylabel("Test loss")
+    plt.title(f" {args.model} {args.dataset}")
+    plt.savefig("../plots/active_%s_%s.pdf" % (args.model, args.dataset))
 
 
 if __name__ == "__main__":
