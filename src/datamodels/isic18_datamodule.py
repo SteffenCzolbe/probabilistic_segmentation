@@ -22,7 +22,7 @@ class ISIC18DataModule(pl.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
 
-        self.dims = (3, 128, 128)
+        self.dims = (3, 256, 256)
         self.classes = 2
         self.augment = RandomAffine()
         self.transform = transforms.Compose([
