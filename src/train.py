@@ -14,15 +14,32 @@ def cli_main():
     # ------------
     parser = ArgumentParser()
     parser.add_argument(
-        '--model', type=str, help=f'Model architecute. Options: {list(util.get_supported_models().keys())}')
+        "--model",
+        type=str,
+        help=f"Model architecute. Options: {list(util.get_supported_models().keys())}",
+    )
     parser.add_argument(
-        '--dataset', type=str, help=f'Dataset. Options: {list(util.get_supported_datamodules().keys())}')
-    parser.add_argument('--batch_size', default=64,
-                        type=int, help='Batchsize. Default 64.')
-    parser.add_argument('--learning_rate', default=0.0001,
-                        type=float, help='Learning rate. Default 0.0001')
+        "--dataset",
+        type=str,
+        help=f"Dataset. Options: {list(util.get_supported_datamodules().keys())}",
+    )
+    parser.add_argument(
+        "--batch_size", default=64, type=int, help="Batchsize. Default 64."
+    )
+    parser.add_argument(
+        "--learning_rate",
+        default=0.0001,
+        type=float,
+        help="Learning rate. Default 0.0001",
+    )
     parser.add_argument(
         "--notest", action="store_true", help="Set to not run test after training."
+    )
+    parser.add_argument(
+        "--compute_comparison_metrics",
+        type=bool,
+        default=True,
+        help="Compute GED etc. metrics in val and test steps.",
     )
     parser = pl.Trainer.add_argparse_args(parser)
     for model in util.get_supported_models().values():
@@ -46,17 +63,19 @@ def cli_main():
     # training
     # ------------
     # save model with best validation loss
-    checkpointing_callback = pl.callbacks.ModelCheckpoint(monitor='val/loss',
-                                                          mode='min')
+    checkpointing_callback = pl.callbacks.ModelCheckpoint(
+        monitor="val/loss", mode="min"
+    )
     # early stopping
-    early_stop_callback = pl.callbacks.EarlyStopping(monitor='val/loss',
-                                                     min_delta=0.00,
-                                                     patience=10,
-                                                     verbose=True,
-                                                     mode='min')
+    early_stop_callback = pl.callbacks.EarlyStopping(
+        monitor="val/loss", min_delta=0.00, patience=10, verbose=True, mode="min"
+    )
 
     trainer = pl.Trainer.from_argparse_args(
-        args, checkpoint_callback=checkpointing_callback, callbacks=[early_stop_callback])
+        args,
+        checkpoint_callback=checkpointing_callback,
+        callbacks=[early_stop_callback],
+    )
     trainer.fit(model, dataset)
 
     # ------------
@@ -66,5 +85,5 @@ def cli_main():
         trainer.test()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli_main()
