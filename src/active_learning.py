@@ -40,6 +40,13 @@ def main():
         help="Stop active learning after this many iterations.",
     )
 
+    parser.add_argument(
+        "--compute_comparison_metrics",
+        type=bool,
+        default=False,
+        help="Compute GED etc. metrics in val and test steps.",
+    )
+
     parser = pl.Trainer.add_argparse_args(parser)
     for model in util.get_supported_models().values():
         parser = model.add_model_specific_args(parser)
