@@ -97,10 +97,10 @@ def main():
         trainer.fit(model, dataset)
         test_loss[strategy].append(trainer.test()[0]["test/loss"])
         for i in range(args.num_iters):
-            print(f"{strategy}************{i}/{args.num_iter}***********")
+            print(f"{strategy}************{i+1}/{args.num_iters}***********")
             with torch.no_grad():
                 if strategy == "random":
-                    mask.append(torch.randint(size_Q, size=(1,)))
+                    mask.append(int(torch.randint(size_Q, size=(1,))))
                 elif strategy == "output_uncertainty":
                     model.to(device)
                     output_entropy = []
@@ -117,19 +117,20 @@ def main():
             trainer = ResetTrainer().trainer
             trainer.fit(model, dataset)
             test_loss[strategy].append(trainer.test()[0]["test/loss"])
+        print(mask)
 
     # ------------
     # plot
     # ------------
+    print(test_loss)
     plt.figure()
     plt.plot(test_loss["random"], label="random sampling")
     plt.plot(test_loss["output_uncertainty"], label="uncertainty sampling")
-    plt.grid()
     plt.legend()
     plt.xlabel("Iterations of active learning")
     plt.ylabel("Test loss")
     plt.title(f" {args.model} {args.dataset}")
-    plt.savefig("../plots/active_%s_%s.pdf" % (args.model, args.dataset))
+    plt.savefig("plots/active_%s_%s.pdf" % (args.model, args.dataset))
 
 
 if __name__ == "__main__":
