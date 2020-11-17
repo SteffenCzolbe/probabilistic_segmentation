@@ -1,5 +1,6 @@
 # Draw samples for qualitative evaluation
 python3 -m src.plot.viz_predictions --model_dir trained_models/lidc --output_file plots/predictions_lidc.png
+python3 -m src.plot.viz_predictions --model_dir trained_models/isic18 --output_file plots/predictions_isic18.png
 
 # GED-plot
 python3 -m src.plot.ged_plot --dataset lidc --output_file plots/ged.png plots/ged.pdf
