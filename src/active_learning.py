@@ -99,6 +99,10 @@ def main():
         for i in range(args.num_iters):
             print(f"{strategy}************{i+1}/{args.num_iters}***********")
             with torch.no_grad():
+                if (i + 1) % 5 == 0:
+                    torch.save(
+                        test_loss[strategy], f"lightning_models/{strategy}_{i+1}.pt"
+                    )
                 if strategy == "random":
                     mask.append(int(torch.randint(size_Q, size=(1,))))
                 elif strategy == "output_uncertainty":
