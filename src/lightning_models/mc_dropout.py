@@ -46,17 +46,17 @@ class MCDropout(pl.LightningModule):
             y_hat = self.net(x)
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log("val/loss", loss)
+        if self.hparams.compute_comparison_metrics:
+            # calculate aditional metrics every 5 epochs
+            if self.current_epoch % 5 == 0:
+                for sample_count in [1, 4, 8, 16]:
+                    ged = generalized_energy_distance(
+                        self, x, ys, sample_count=sample_count
+                    )
+                    self.log(f"val/ged/{sample_count}", ged)
 
-        # calculate aditional metrics every 5 epochs
-        if self.current_epoch % 5 == 0:
-            for sample_count in [1, 4, 8, 16]:
-                ged = generalized_energy_distance(
-                    self, x, ys, sample_count=sample_count)
-                self.log(f"val/ged/{sample_count}", ged)
-
-                dice = heatmap_dice_loss(
-                    self, x, ys, sample_count=sample_count)
-                self.log(f"val/diceloss/{sample_count}", dice)
+                    dice = heatmap_dice_loss(self, x, ys, sample_count=sample_count)
+                    self.log(f"val/diceloss/{sample_count}", dice)
 
     def test_step(self, batch, batch_idx):
         self.train()
@@ -65,15 +65,15 @@ class MCDropout(pl.LightningModule):
             y_hat = self.net(x)
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log("test/loss", loss)
+        if self.hparams.compute_comparison_metrics:
+            for sample_count in [1, 4, 8, 16]:
+                ged = generalized_energy_distance(
+                    self, x, ys, sample_count=sample_count
+                )
+                self.log(f"test/ged/{sample_count}", ged)
 
-        for sample_count in [1, 4, 8, 16]:
-            ged = generalized_energy_distance(
-                self, x, ys, sample_count=sample_count)
-            self.log(f"test/ged/{sample_count}", ged)
-
-            dice = heatmap_dice_loss(
-                self, x, ys, sample_count=sample_count)
-            self.log(f"test/diceloss/{sample_count}", dice)
+                dice = heatmap_dice_loss(self, x, ys, sample_count=sample_count)
+                self.log(f"test/diceloss/{sample_count}", dice)
 
     def configure_optimizers(self):
         return torch.optim.Adam(
@@ -91,7 +91,7 @@ class MCDropout(pl.LightningModule):
         return "mcdropout"
 
     def max_unique_samples(self):
-        return float('inf')
+        return float("inf")
 
     def pixel_wise_probabaility(self, x, sample_cnt=16):
         """return the pixel-wise probability map

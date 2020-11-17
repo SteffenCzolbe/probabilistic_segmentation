@@ -14,8 +14,9 @@ class SoftmaxOutput(pl.LightningModule):
         self.save_hyperparameters(hparams)
 
         self.unet = Unet(
-            input_channels=self.hparams.data_dims[
-                0], num_classes=self.hparams.data_classes, num_filters=self.hparams.num_filters
+            input_channels=self.hparams.data_dims[0],
+            num_classes=self.hparams.data_classes,
+            num_filters=self.hparams.num_filters,
         )
 
     def forward(self, x):
@@ -44,17 +45,17 @@ class SoftmaxOutput(pl.LightningModule):
         for y in ys:
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log("val/loss", loss)
+        if self.hparams.compute_comparison_metrics:
+            # calculate aditional metrics every 5 epochs
+            if self.current_epoch % 5 == 0:
+                for sample_count in [1, 4, 8, 16]:
+                    ged = generalized_energy_distance(
+                        self, x, ys, sample_count=sample_count
+                    )
+                    self.log(f"val/ged/{sample_count}", ged)
 
-        # calculate aditional metrics every 5 epochs
-        if self.current_epoch % 5 == 0:
-            for sample_count in [1, 4, 8, 16]:
-                ged = generalized_energy_distance(
-                    self, x, ys, sample_count=sample_count)
-                self.log(f"val/ged/{sample_count}", ged)
-
-                dice = heatmap_dice_loss(
-                    self, x, ys, sample_count=sample_count)
-                self.log(f"val/diceloss/{sample_count}", dice)
+                    dice = heatmap_dice_loss(self, x, ys, sample_count=sample_count)
+                    self.log(f"val/diceloss/{sample_count}", dice)
 
     def test_step(self, batch, batch_idx):
         x, ys = batch
@@ -62,24 +63,24 @@ class SoftmaxOutput(pl.LightningModule):
         for y in ys:
             loss = F.cross_entropy(y_hat, y[:, 0])
             self.log("test/loss", loss)
+        if self.hparams.compute_comparison_metrics:
+            for sample_count in [1, 4, 8, 16]:
+                ged = generalized_energy_distance(
+                    self, x, ys, sample_count=sample_count
+                )
+                self.log(f"test/ged/{sample_count}", ged)
 
-        for sample_count in [1, 4, 8, 16]:
-            ged = generalized_energy_distance(
-                self, x, ys, sample_count=sample_count)
-            self.log(f"test/ged/{sample_count}", ged)
-
-            dice = heatmap_dice_loss(
-                self, x, ys, sample_count=sample_count)
-            self.log(f"test/diceloss/{sample_count}", dice)
+                dice = heatmap_dice_loss(self, x, ys, sample_count=sample_count)
+                self.log(f"test/diceloss/{sample_count}", dice)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
 
-    @ staticmethod
+    @staticmethod
     def model_name():
         return "Softmax Output"
 
-    @ staticmethod
+    @staticmethod
     def model_shortname():
         return "softm"
 
@@ -128,7 +129,7 @@ class SoftmaxOutput(pl.LightningModule):
         _, pred = y.max(dim=1, keepdim=True)
         return pred
 
-    @ staticmethod
+    @staticmethod
     def add_model_specific_args(parent_parser):
         parser = ArgumentParser(
             parents=[parent_parser], add_help=False, conflict_handler="resolve"

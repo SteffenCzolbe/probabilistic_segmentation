@@ -72,16 +72,17 @@ class ProbUnet(pl.LightningModule):
             self.log("val/std_post_norm", std_posterior)
             self.log("val/std_prior_norm", std_prior)
 
-        # calculate aditional metrics every 5 epochs
-        if self.current_epoch % 5 == 0:
-            for sample_count in [1, 4, 8, 16]:
-                ged = generalized_energy_distance(
-                    self, x, ys, sample_count=sample_count)
-                self.log(f"val/ged/{sample_count}", ged)
+        if self.hparams.compute_comparison_metrics:
+            # calculate aditional metrics every 5 epochs
+            if self.current_epoch % 5 == 0:
+                for sample_count in [1, 4, 8, 16]:
+                    ged = generalized_energy_distance(
+                        self, x, ys, sample_count=sample_count
+                    )
+                    self.log(f"val/ged/{sample_count}", ged)
 
-                dice = heatmap_dice_loss(
-                    self, x, ys, sample_count=sample_count)
-                self.log(f"val/diceloss/{sample_count}", dice)
+                    dice = heatmap_dice_loss(self, x, ys, sample_count=sample_count)
+                    self.log(f"val/diceloss/{sample_count}", dice)
 
     def test_step(self, batch, batch_idx):
         x, ys = batch
@@ -101,14 +102,15 @@ class ProbUnet(pl.LightningModule):
             self.log("test/std_post_norm", std_posterior)
             self.log("test/std_prior_norm", std_prior)
 
-        for sample_count in [1, 4, 8, 16]:
-            ged = generalized_energy_distance(
-                self, x, ys, sample_count=sample_count)
-            self.log(f"test/ged/{sample_count}", ged)
+        if self.hparams.compute_comparison_metrics:
+            for sample_count in [1, 4, 8, 16]:
+                ged = generalized_energy_distance(
+                    self, x, ys, sample_count=sample_count
+                )
+                self.log(f"test/ged/{sample_count}", ged)
 
-            dice = heatmap_dice_loss(
-                self, x, ys, sample_count=sample_count)
-            self.log(f"test/diceloss/{sample_count}", dice)
+                dice = heatmap_dice_loss(self, x, ys, sample_count=sample_count)
+                self.log(f"test/diceloss/{sample_count}", dice)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -122,7 +124,7 @@ class ProbUnet(pl.LightningModule):
         return "punet"
 
     def max_unique_samples(self):
-        return float('inf')
+        return float("inf")
 
     def pixel_wise_probabaility(self, x, sample_cnt=16):
         """return the pixel-wise probability map
@@ -136,8 +138,7 @@ class ProbUnet(pl.LightningModule):
         """
         # we approximate the pixel whise probability by sampling  sample_cnt predictions, then avergaging
         self.sample_prediction(x)
-        ps = [self.resample_prediction_non_threshholded()
-              for _ in range(sample_cnt)]
+        ps = [self.resample_prediction_non_threshholded() for _ in range(sample_cnt)]
         p = torch.stack(ps).mean(dim=0)
         return p
 

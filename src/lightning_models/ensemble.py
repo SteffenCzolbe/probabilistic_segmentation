@@ -66,16 +66,17 @@ class Ensemble(pl.LightningModule):
 
         self.log("val/loss", ensemble_loss)
 
-        # calculate aditional metrics every 5 epochs
-        if self.current_epoch % 5 == 0:
-            for sample_count in [1, 4, 8, 16]:
-                ged = generalized_energy_distance(
-                    self, x, ys, sample_count=sample_count)
-                self.log(f"val/ged/{sample_count}", ged)
+        if self.hparams.compute_comparison_metrics:
+            # calculate aditional metrics every 5 epochs
+            if self.current_epoch % 5 == 0:
+                for sample_count in [1, 4, 8, 16]:
+                    ged = generalized_energy_distance(
+                        self, x, ys, sample_count=sample_count
+                    )
+                    self.log(f"val/ged/{sample_count}", ged)
 
-                dice = heatmap_dice_loss(
-                    self, x, ys, sample_count=sample_count)
-                self.log(f"val/diceloss/{sample_count}", dice)
+                    dice = heatmap_dice_loss(self, x, ys, sample_count=sample_count)
+                    self.log(f"val/diceloss/{sample_count}", dice)
 
         return ensemble_loss
 
@@ -92,14 +93,15 @@ class Ensemble(pl.LightningModule):
 
         self.log("test/loss", ensemble_loss)
 
-        for sample_count in [1, 4, 8, 16]:
-            ged = generalized_energy_distance(
-                self, x, ys, sample_count=sample_count)
-            self.log(f"test/ged/{sample_count}", ged)
+        if self.hparams.compute_comparison_metrics:
+            for sample_count in [1, 4, 8, 16]:
+                ged = generalized_energy_distance(
+                    self, x, ys, sample_count=sample_count
+                )
+                self.log(f"test/ged/{sample_count}", ged)
 
-            dice = heatmap_dice_loss(
-                self, x, ys, sample_count=sample_count)
-            self.log(f"test/diceloss/{sample_count}", dice)
+                dice = heatmap_dice_loss(self, x, ys, sample_count=sample_count)
+                self.log(f"test/diceloss/{sample_count}", dice)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
@@ -129,8 +131,13 @@ class Ensemble(pl.LightningModule):
             # draw all samples
             return self.forward(x)
         else:
-            ps = [F.softmax(self.models[torch.randint(self.hparams.num_models, ())].forward(x), dim=1)
-                  for _ in range(sample_cnt)]
+            ps = [
+                F.softmax(
+                    self.models[torch.randint(self.hparams.num_models, ())].forward(x),
+                    dim=1,
+                )
+                for _ in range(sample_cnt)
+            ]
             return torch.stack(ps).mean(dim=0)
 
     def pixel_wise_uncertainty(self, x, sample_cnt=None):
