@@ -11,7 +11,7 @@ from .augmentation import RandomAffine
 
 class ISIC18DataModule(pl.LightningDataModule):
 
-    def __init__(self, data_dir: str = './data/isic18/ISIC18/', batch_size: int = 32):
+    def __init__(self, data_dir: str = './data/isic18/254/', batch_size: int = 32):
         """Data module for the ISIC18 dataset
 
         Args:
