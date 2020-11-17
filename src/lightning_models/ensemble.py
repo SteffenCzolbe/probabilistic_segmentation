@@ -70,12 +70,15 @@ class Ensemble(pl.LightningModule):
             # calculate aditional metrics every 5 epochs
             if self.current_epoch % 5 == 0:
                 for sample_count in [1, 4, 8, 16]:
-                    ged = generalized_energy_distance(
+                    ged, sample_diversity = generalized_energy_distance(
                         self, x, ys, sample_count=sample_count
                     )
                     self.log(f"val/ged/{sample_count}", ged)
+                    self.log(
+                        f"val/sample_diversity/{sample_count}", sample_diversity)
 
-                    dice = heatmap_dice_loss(self, x, ys, sample_count=sample_count)
+                    dice = heatmap_dice_loss(
+                        self, x, ys, sample_count=sample_count)
                     self.log(f"val/diceloss/{sample_count}", dice)
 
         return ensemble_loss
@@ -95,12 +98,15 @@ class Ensemble(pl.LightningModule):
 
         if self.hparams.compute_comparison_metrics:
             for sample_count in [1, 4, 8, 16]:
-                ged = generalized_energy_distance(
+                ged, sample_diversity = generalized_energy_distance(
                     self, x, ys, sample_count=sample_count
                 )
                 self.log(f"test/ged/{sample_count}", ged)
+                self.log(
+                    f"test/sample_diversity/{sample_count}", sample_diversity)
 
-                dice = heatmap_dice_loss(self, x, ys, sample_count=sample_count)
+                dice = heatmap_dice_loss(
+                    self, x, ys, sample_count=sample_count)
                 self.log(f"test/diceloss/{sample_count}", dice)
 
     def configure_optimizers(self):
@@ -133,7 +139,8 @@ class Ensemble(pl.LightningModule):
         else:
             ps = [
                 F.softmax(
-                    self.models[torch.randint(self.hparams.num_models, ())].forward(x),
+                    self.models[torch.randint(
+                        self.hparams.num_models, ())].forward(x),
                     dim=1,
                 )
                 for _ in range(sample_cnt)

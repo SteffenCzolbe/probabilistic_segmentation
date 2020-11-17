@@ -74,9 +74,11 @@ def cli_main():
             y_mean = torch.stack(ys).float().mean(dim=0)
 
             for sample_count in [1, 4, 8, 16]:
-                ged = generalized_energy_distance(
+                ged, sample_diversity = generalized_energy_distance(
                     model, x, ys, sample_count=sample_count)
                 metrics[f"test/ged/{sample_count}"].append(ged)
+                metrics[f"test/sample_diversity/{sample_count}"].append(
+                    sample_diversity)
 
                 dice = heatmap_dice_loss(
                     model, x, ys, sample_count=sample_count)

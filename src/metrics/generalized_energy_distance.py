@@ -32,7 +32,7 @@ def ged(samples_a, samples_b):
         samples_b: List of Long-Tensors of shape Bx1xHxW of segmentation maps
 
     Returns:
-        List of distances, length B
+        ged, sample_diversity: Lists of distances, length B
     """
     idx_a = range(len(samples_a))
     idx_b = range(len(samples_b))
@@ -51,7 +51,10 @@ def ged(samples_a, samples_b):
     else:
         e_bb = 0
 
-    return 2 * e_ab - e_aa - e_bb
+    ged = 2 * e_ab - e_aa - e_bb
+    sample_diversity = e_aa
+
+    return ged, sample_diversity
 
 
 def generalized_energy_distance(model, x, ys, sample_count=16):
@@ -64,7 +67,7 @@ def generalized_energy_distance(model, x, ys, sample_count=16):
         sample_count: the amount of samples to draw from the model
 
     Returns:
-        List of distances, length B
+        ged, sample_diversity: Lists of distances, length B
     """
     y_hats = [model.sample_prediction(x) for _ in range(sample_count)]
     return ged(y_hats, ys)
