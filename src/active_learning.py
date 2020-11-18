@@ -102,7 +102,8 @@ def main():
             with torch.no_grad():
                 if (i + 1) % 10 == 0:
                     torch.save(
-                        test_loss[strategy], f"lightning_logs/{strategy}_{i+1}.pt"
+                        test_loss[strategy],
+                        f"lightning_logs/{args.model}_{args.dataset}_{strategy}_{i+1}.pt",
                     )
                 if strategy == "random":
                     mask.append(int(torch.randint(size_Q, size=(1,))))

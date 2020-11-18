@@ -13,25 +13,25 @@ def load_data(test_results_file, dataset):
 
     models = test_results[dataset].keys()
     data = defaultdict(list)
-    means = defaultdict(list)
+    median = defaultdict(list)
     for model in models:
         for sample_count in 1, 4, 8, 16:
             geds = test_results[dataset][model]['per_sample'][f"test/ged/{sample_count}"]
             model_name = test_results[dataset][model]['model_name']
             data['ged'] += list(geds)
-            means['ged'].append(np.mean(geds))
+            median['ged'].append(np.median(geds))
             data['model'] += [model_name for _ in range(len(geds))]
-            means['model'].append(model_name)
+            median['model'].append(model_name)
             data['num. samples'] += [sample_count for _ in range(len(geds))]
-            means['num. samples'].append(sample_count)
+            median['num. samples'].append(sample_count)
 
     # dataframe columns: #ged,  #samples, model
-    return pd.DataFrame(data), pd.DataFrame(means)
+    return pd.DataFrame(data), pd.DataFrame(median)
 
 
 def main(args):
     # load data  minto pandas dataframes
-    df_data, df_means = load_data(args.test_results_file, args.dataset)
+    df_data, df_median = load_data(args.test_results_file, args.dataset)
     sns.set_theme(style="whitegrid")
 
     # plot datapoints
@@ -41,7 +41,7 @@ def main(args):
 
     # plot means on top
     ax = sns.stripplot(x='num. samples', y="ged", hue="model",
-                       data=df_means, palette="Set2", dodge=True,
+                       data=df_median, palette="Set2", dodge=True,
                        size=9, jitter=0, edgecolor='black', ax=ax, linewidth=1)
 
     # Get the handles and labels

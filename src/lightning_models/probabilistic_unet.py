@@ -13,6 +13,10 @@ class ProbUnet(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)
 
+        # add default for backwards-compatebility
+        if 'compute_comparison_metrics' not in self.hparams:
+            self.hparams.compute_comparison_metrics = True
+
         self.punet = ProbabilisticUnet(
             data_dims=self.hparams.data_dims,
             num_classes=self.hparams.data_classes,
