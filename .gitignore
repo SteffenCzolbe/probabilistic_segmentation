@@ -3,6 +3,7 @@ lightning_logs*
 trained_models*
 .vscode
 plots/experiment_results.pickl
+checkpoints
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
