@@ -19,7 +19,7 @@ def set_up_figure(model_cnt, sample):
     fig.plot_img(0, 0, sample[0], title="Image", vmin=0, vmax=1)
 
     for i in range(len(sample[1])):
-        fig.plot_img(0, 1, sample[1][i], title=f"l_{i}", vmin=0, vmax=1)
+        fig.plot_img(0, i+1, sample[1][i], title=f"l_{i}", vmin=0, vmax=1)
     return fig
 
 
