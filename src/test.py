@@ -87,18 +87,24 @@ def cli_main():
             sample_count = 16
             uncertainty = model.pixel_wise_uncertainty(
                 x, sample_cnt=sample_count)
-            y_hats = [model.sample_prediction(
-                x).float() for _ in range(sample_count)]
-            y_samples = [ys[torch.randint(len(ys), ())].float()
-                         for _ in range(sample_count)]
-            seg_error = torch.stack([torch.nn.functional.binary_cross_entropy(
-                y_hat, y, reduction='none') for y_hat, y in zip(y_hats, y_samples)]).mean(dim=0)
-            correl = pearsonr(uncertainty, seg_error)
+            correl = torch.stack([pearsonr(uncertainty, torch.nn.functional.binary_cross_entropy(
+                model.sample_prediction(x).float(),
+                ys[torch.randint(len(ys), ())].float(),
+                reduction='none')) for _ in range(16)]).mean(dim=0)
             metrics["test/uncertainty_seg_error_correl"].append(correl)
-            # record pixel-wise metrics for only the first batch
-            if i == 0:
-                metrics["test/pix_uncertainty"].append(uncertainty.flatten())
-                metrics["test/pix_seg_error"].append(seg_error.flatten())
+            if i < 3:
+                # record pixel-wise metrics for only a few batchs
+                y_hat = model.sample_prediction(x).flatten()
+                y = ys[torch.randint(len(ys), ())].flatten()
+                uncertainty = uncertainty.flatten()
+                metrics["test/tp_ucertainty"].append(
+                    uncertainty[(y_hat == 1) & (y == 1)])
+                metrics["test/fp_ucertainty"].append(
+                    uncertainty[(y_hat == 1) & (y == 0)])
+                metrics["test/fn_ucertainty"].append(
+                    uncertainty[(y_hat == 0) & (y == 1)])
+                metrics["test/tn_ucertainty"].append(
+                    uncertainty[(y_hat == 0) & (y == 0)])
 
     # map metrics into lists of floats
     test_results[dataset][model.model_shortname()]['per_sample'] = {}

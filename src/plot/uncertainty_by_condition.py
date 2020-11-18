@@ -8,6 +8,7 @@ import pickle
 
 
 def load_data(test_results_file, dataset):
+    MAX_POINTS_PER_CLASS = 3000
     with open(test_results_file, 'rb') as f:
         test_results = pickle.load(f)
 
@@ -15,21 +16,23 @@ def load_data(test_results_file, dataset):
     data = defaultdict(list)
     median = defaultdict(list)
     for model in models:
-        corr = test_results[dataset][model]['per_sample']["test/uncertainty_seg_error_correl"]
-        nan_vals = np.count_nonzero(np.isnan(corr))
-        if nan_vals > 0:
-            print(
-                f'WARNING: Ignoring {nan_vals}/{len(corr)} Nan-Values during plotting! Probably caused by gt annotation being 100% background.')
-        model_name = test_results[dataset][model]['model_name']
-        data['corr'] += list(corr)
-        median['corr'].append(np.nanmedian(corr))
-        data['model'] += [model_name for _ in range(len(corr))]
-        median['model'].append(model_name)
-        # we add a dummy x-axis
-        data['x'] += [0 for _ in range(len(corr))]
-        median['x'].append(0)
+        for condition in ['tp', 'fp', 'fn', 'tn']:
+            uncertainties = test_results[dataset][model][
+                'per_sample'][f"test/{condition}_ucertainty"]
 
-    # dataframe columns: corr,  model, x
+            if len(uncertainties) > MAX_POINTS_PER_CLASS:
+                uncertainties = np.random.choice(
+                    uncertainties, size=MAX_POINTS_PER_CLASS, replace=False)
+            model_name = test_results[dataset][model]['model_name']
+            data['uncertainty'] += list(uncertainties)
+            median['uncertainty'].append(np.median(uncertainties))
+            data['model'] += [model_name for _ in range(len(uncertainties))]
+            median['model'].append(model_name)
+            data['condition'] += [condition.upper()
+                                  for _ in range(len(uncertainties))]
+            median['condition'].append(condition.upper())
+
+    # dataframe columns: #ged,  #samples, model
     return pd.DataFrame(data), pd.DataFrame(median)
 
 
@@ -39,12 +42,12 @@ def main(args):
     sns.set_theme(style="whitegrid")
 
     # plot datapoints
-    ax = sns.stripplot(x='x', y="corr", hue="model",
+    ax = sns.stripplot(x='condition', y="uncertainty", hue="model",
                        data=df_data, palette="Set2", dodge=True,
-                       size=1.3, jitter=0.2)
+                       size=1, jitter=0.2)
 
     # plot means on top
-    ax = sns.stripplot(x='x', y="corr", hue="model",
+    ax = sns.stripplot(x='condition', y="uncertainty", hue="model",
                        data=df_median, palette="Set2", dodge=True,
                        size=9, jitter=0, edgecolor='black', ax=ax, linewidth=1)
 
@@ -54,12 +57,8 @@ def main(args):
     # When creating the legend, only use the first 4 elements
     l = plt.legend(handles[:4], labels[:4])
 
-    # hide dummy-x acis label
-    plt.xticks([])
-    ax.set_xlabel(None)
-
     # y-label
-    ax.set_ylabel('Corr$(H, $seg_error$)$')
+    ax.set_ylabel('Uncertainty $H$')
 
     # save
     fig = ax.get_figure()
