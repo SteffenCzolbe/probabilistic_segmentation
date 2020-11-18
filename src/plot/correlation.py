@@ -13,7 +13,7 @@ def load_data(test_results_file, dataset):
 
     models = test_results[dataset].keys()
     data = defaultdict(list)
-    means = defaultdict(list)
+    median = defaultdict(list)
     for model in models:
         corr = test_results[dataset][model]['per_sample']["test/uncertainty_seg_error_correl"]
         nan_vals = np.count_nonzero(np.isnan(corr))
@@ -22,20 +22,20 @@ def load_data(test_results_file, dataset):
                 f'WARNING: Ignoring {nan_vals}/{len(corr)} Nan-Values during plotting!')
         model_name = test_results[dataset][model]['model_name']
         data['corr'] += list(corr)
-        means['corr'].append(np.nanmean(corr))
+        median['corr'].append(np.nanmedian(corr))
         data['model'] += [model_name for _ in range(len(corr))]
-        means['model'].append(model_name)
+        median['model'].append(model_name)
         # we add a dummy x-axis
         data['x'] += [0 for _ in range(len(corr))]
-        means['x'].append(0)
+        median['x'].append(0)
 
     # dataframe columns: corr,  model, x
-    return pd.DataFrame(data), pd.DataFrame(means)
+    return pd.DataFrame(data), pd.DataFrame(median)
 
 
 def main(args):
     # load data  minto pandas dataframes
-    df_data, df_means = load_data(args.test_results_file, args.dataset)
+    df_data, df_median = load_data(args.test_results_file, args.dataset)
     sns.set_theme(style="whitegrid")
 
     # plot datapoints
@@ -45,7 +45,7 @@ def main(args):
 
     # plot means on top
     ax = sns.stripplot(x='x', y="corr", hue="model",
-                       data=df_means, palette="Set2", dodge=True,
+                       data=df_median, palette="Set2", dodge=True,
                        size=9, jitter=0, edgecolor='black', ax=ax, linewidth=1)
 
     # Get the handles and labels
