@@ -6,13 +6,14 @@ import torch.nn.functional as F
 from src.networks.unet import Unet
 from src.metrics.generalized_energy_distance import generalized_energy_distance
 from src.metrics.soft_dice_loss import heatmap_dice_loss
+import src.util as util
 
 
 class SoftmaxOutput(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
         self.save_hyperparameters(hparams)
-        
+
         # add default for backwards-compatebility
         if 'compute_comparison_metrics' not in self.hparams:
             self.hparams.compute_comparison_metrics = True
@@ -120,11 +121,7 @@ class SoftmaxOutput(pl.LightningModule):
             tensor: B x 1 x H x W
         """
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        mask = p > 0
-        h = torch.zeros_like(p)
-        h[mask] = torch.log2(1 / p[mask])
-        H = torch.sum(p * h, dim=1, keepdim=True)
-        return H
+        return util.entropy(p)
 
     def sample_prediction(self, x):
         """samples a concrete (thresholded) prediction.
