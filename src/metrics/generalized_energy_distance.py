@@ -39,17 +39,12 @@ def ged(samples_a, samples_b):
 
     e_ab = torch.stack([1 - iou(samples_a[i], samples_b[j])
                         for i, j in product(idx_a, idx_b)]).mean(dim=0)
-    if len(samples_a) > 1:
-        e_aa = torch.stack([1 - iou(samples_a[i], samples_a[j])
-                            for i, j in product(idx_a, idx_a)]).mean(dim=0)
-    else:
-        e_aa = 0
 
-    if len(samples_b) > 1:
-        e_bb = torch.stack([1 - iou(samples_b[i], samples_b[j])
-                            for i, j in product(idx_b, idx_b)]).mean(dim=0)
-    else:
-        e_bb = 0
+    e_aa = torch.stack([1. - iou(samples_a[i], samples_a[j])
+                        for i, j in product(idx_a, idx_a)]).mean(dim=0)
+
+    e_bb = torch.stack([1 - iou(samples_b[i], samples_b[j])
+                        for i, j in product(idx_b, idx_b)]).mean(dim=0)
 
     ged = 2 * e_ab - e_aa - e_bb
     sample_diversity = e_aa
@@ -70,6 +65,7 @@ def generalized_energy_distance(model, x, ys, sample_count=16):
         ged, sample_diversity: Lists of distances, length B
     """
     y_hats = [model.sample_prediction(x) for _ in range(sample_count)]
+    ys = [ys[torch.randint(len(ys), ())] for _ in range(sample_count)]
     return ged(y_hats, ys)
 
 
