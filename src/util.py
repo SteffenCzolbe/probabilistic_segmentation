@@ -106,3 +106,34 @@ def load_model_from_checkpoint(model_path):
     model = model_class.load_from_checkpoint(checkpoint_path=checkpoint)
 
     return model
+
+
+def entropy(p):
+    """
+    Calculates the entropy (uncertainty) of p
+
+    Args:
+        p (Tensor BxCxHxW): probability per class
+
+    Returns:
+        Tensor Bx1xHxw
+    """
+    mask = p > 0
+    h = torch.zeros_like(p)
+    h[mask] = torch.log2(1 / p[mask])
+    H = torch.sum(p * h, dim=1, keepdim=True)
+    return H
+
+
+def binary_entropy(p):
+    """
+    Calculates the entropy (uncertainty) of p
+
+    Args:
+        p (Tensor Bx1xHxW): probability per class
+
+    Returns:
+        Tensor Bx1xHxw
+    """
+    p = torch.cat([p, 1-p])
+    return entropy(p)
