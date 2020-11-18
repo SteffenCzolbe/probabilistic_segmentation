@@ -18,7 +18,7 @@ def load_data(test_results_file, dataset):
     for model in models:
         for condition in ['tp', 'fp', 'fn', 'tn']:
             uncertainties = test_results[dataset][model][
-                'per_sample'][f"test/{condition}_ucertainty"]
+                'per_sample'][f"test/{condition}_uncertainty"]
 
             if len(uncertainties) > MAX_POINTS_PER_CLASS:
                 uncertainties = np.random.choice(

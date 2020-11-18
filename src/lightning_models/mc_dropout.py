@@ -6,13 +6,14 @@ import torch.nn.functional as F
 from src.networks.mcdropout_unet import MCDropoutUnet
 from src.metrics.generalized_energy_distance import generalized_energy_distance
 from src.metrics.soft_dice_loss import heatmap_dice_loss
+import src.util as util
 
 
 class MCDropout(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
         self.save_hyperparameters(hparams)
-        
+
         # add default for backwards-compatebility
         if 'compute_comparison_metrics' not in self.hparams:
             self.hparams.compute_comparison_metrics = True
@@ -124,11 +125,8 @@ class MCDropout(pl.LightningModule):
         Returns:
             tensor: B x 1 x H x W
         """
-        eps = torch.tensor(10 ** -8).type_as(x)
         p = self.pixel_wise_probabaility(x, sample_cnt=sample_cnt)
-        p = torch.max(p, eps)
-        h = torch.sum(-p * torch.log2(p), dim=1, keepdim=True)
-        return h
+        return util.entropy(p)
 
     def sample_prediction(self, x):
         """samples a concrete (thresholded) prediction.

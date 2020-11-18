@@ -95,16 +95,24 @@ def cli_main():
             if i < 3:
                 # record pixel-wise metrics for only a few batchs
                 y_hat = model.sample_prediction(x).flatten()
-                y = ys[torch.randint(len(ys), ())].flatten()
-                uncertainty = uncertainty.flatten()
-                metrics["test/tp_ucertainty"].append(
-                    uncertainty[(y_hat == 1) & (y == 1)])
-                metrics["test/fp_ucertainty"].append(
-                    uncertainty[(y_hat == 1) & (y == 0)])
-                metrics["test/fn_ucertainty"].append(
-                    uncertainty[(y_hat == 0) & (y == 1)])
-                metrics["test/tn_ucertainty"].append(
-                    uncertainty[(y_hat == 0) & (y == 0)])
+                y_consens = torch.stack(ys).sum(dim=0).flatten()
+                model_uncertainty = uncertainty.flatten()
+
+                y_mean = torch.stack(ys).float().mean(dim=0)
+                annot_uncertainty = util.binary_entropy(y_mean).flatten()
+
+                annotators = len(ys)
+                # record conditional uncetainty only if the is consensus
+                metrics["test/tp_uncertainty"].append(
+                    model_uncertainty[(y_hat == 1) & (y_consens == annotators)])
+                metrics["test/fp_uncertainty"].append(
+                    model_uncertainty[(y_hat == 1) & (y_consens == 0)])
+                metrics["test/fn_uncertainty"].append(
+                    model_uncertainty[(y_hat == 0) & (y_consens == annotators)])
+                metrics["test/tn_uncertainty"].append(
+                    model_uncertainty[(y_hat == 0) & (y_consens == 0)])
+                metrics["test/model_uncertainty"].append(model_uncertainty)
+                metrics["test/annotator_uncertainty"].append(annot_uncertainty)
 
     # map metrics into lists of floats
     test_results[dataset][model.model_shortname()]['per_sample'] = {}
