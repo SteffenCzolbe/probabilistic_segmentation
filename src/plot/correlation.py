@@ -19,7 +19,7 @@ def load_data(test_results_file, dataset):
         nan_vals = np.count_nonzero(np.isnan(corr))
         if nan_vals > 0:
             print(
-                f'WARNING: Ignoring {nan_vals}/{len(corr)} Nan-Values during plotting!')
+                f'WARNING: Ignoring {nan_vals}/{len(corr)} Nan-Values during plotting! Probably caused by gt annotation being 100% background.')
         model_name = test_results[dataset][model]['model_name']
         data['corr'] += list(corr)
         median['corr'].append(np.nanmedian(corr))

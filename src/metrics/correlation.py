@@ -3,7 +3,8 @@ import torch
 
 def pearsonr(x, y):
     """
-Pearson-correlation coefficient for batched operation
+    Pearson-correlation coefficient for batched operation
+    WARNING: returns Nan if one of the inputs is a zero-matrix
 
     Arguments
     ---------
