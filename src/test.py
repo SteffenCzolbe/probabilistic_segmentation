@@ -54,11 +54,11 @@ def cli_main():
     # ------------
     # Run model test script
     # ------------
-    # trainer = pl.Trainer.from_argparse_args(args)
-    # test_metrics = trainer.test(
-    #     model=model, ckpt_path=checkpoint_path, datamodule=datamodule)
-    # for k, v in test_metrics[0].items():
-    #     test_results[dataset][model.model_shortname()][k] = v
+    trainer = pl.Trainer.from_argparse_args(args)
+    test_metrics = trainer.test(
+        model=model, ckpt_path=checkpoint_path, datamodule=datamodule)
+    for k, v in test_metrics[0].items():
+        test_results[dataset][model.model_shortname()][k] = v
 
     # ------------
     # Record sample-specific metrics
