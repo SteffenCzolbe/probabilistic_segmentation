@@ -17,7 +17,10 @@ class ProbUnet(pl.LightningModule):
         # add default for backwards-compatebility
         if 'compute_comparison_metrics' not in self.hparams:
             self.hparams.compute_comparison_metrics = True
+        if 'class_weights' not in self.hparams:
+            self.hparams.class_weights = [1., 1.]
 
+        weight = torch.tensor(self.hparams.class_weights)
         self.punet = ProbabilisticUnet(
             data_dims=self.hparams.data_dims,
             num_classes=self.hparams.data_classes,
@@ -27,6 +30,7 @@ class ProbUnet(pl.LightningModule):
             beta=self.hparams.beta,
             dropout=self.hparams.dropout,
             batch_norm=self.hparams.batch_norm,
+            loss_weights=weight
         )
 
     def forward(self, x):
@@ -217,5 +221,12 @@ class ProbUnet(pl.LightningModule):
             "--batch_norm",
             action="store_true",
             help="Set to use batch normalization during training.",
+        )
+        parser.add_argument(
+            "--class_weights",
+            type=float,
+            nargs="+",
+            default=[1., 1.],
+            help="Weight assigned to the classes in the loss computation. Default 1 1",
         )
         return parser

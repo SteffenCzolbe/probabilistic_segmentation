@@ -115,7 +115,7 @@ class ProbabilisticUnet(nn.Module):
     no_convs_fcomb: no of 1x1 convs in the conbination function
     """
 
-    def __init__(self, data_dims, num_classes=1, num_filters=[32, 64, 128, 192], latent_dim=6, no_fcomb_layers=4, beta=10.0, dropout=False, batch_norm=False):
+    def __init__(self, data_dims, num_classes=1, num_filters=[32, 64, 128, 192], latent_dim=6, no_fcomb_layers=4, beta=10.0, dropout=False, batch_norm=False, loss_weights=None):
         super().__init__()
         self.data_dims = data_dims
         self.input_channels = data_dims[0]
@@ -132,6 +132,8 @@ class ProbabilisticUnet(nn.Module):
                                                  self.input_channels + num_classes, num_filters, latent_dim, dropout=dropout, batch_norm=batch_norm)
         self.fcomb = Fcomb(
             latent_dim, num_filters[0], num_classes, no_fcomb_layers)
+
+        self.recon_loss_fun = nn.CrossEntropyLoss(weight=loss_weights)
 
     def forward(self, x, y=None):
         """
@@ -184,7 +186,7 @@ class ProbabilisticUnet(nn.Module):
         if not self.training:
             # resample output based on prior, not posterior
             self.forward(x)
-        reconstruction_loss = F.cross_entropy(self.y_hat_raw, y[:, 0])
+        reconstruction_loss = self.recon_loss_fun(self.y_hat_raw, y[:, 0])
 
         # training loss
         loss = reconstruction_loss + self.beta * kl_loss
