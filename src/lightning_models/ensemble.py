@@ -18,6 +18,8 @@ class Ensemble(pl.LightningModule):
         # add default for backwards-compatebility
         if 'compute_comparison_metrics' not in self.hparams:
             self.hparams.compute_comparison_metrics = True
+        if 'class_weights' not in self.hparams:
+            self.hparams.class_weights = [1., 1.]
 
         self.models = torch.nn.ModuleList(
             [
@@ -29,7 +31,8 @@ class Ensemble(pl.LightningModule):
                 for _ in range(self.hparams.num_models)
             ]
         )
-        self.next_model_to_sample = 0
+        weight = torch.tensor(self.hparams.class_weights)
+        self.lossfun = torch.nn.CrossEntropyLoss(weight=weight)
 
     def forward(self, x):
         """perfroms a probability-mask prediction
@@ -50,7 +53,7 @@ class Ensemble(pl.LightningModule):
         ensemble_loss = []
         # We cycle through constituent models and ground truth annotations, repeating annotations if nessesary
         for i, (y_hat, y) in enumerate(zip(y_hats, cycle(ys))):
-            loss = F.cross_entropy(y_hat, y[:, 0])
+            loss = self.lossfun(y_hat, y[:, 0])
             self.log(f"train/loss_model_{i}", loss)
             ensemble_loss.append(loss)
         ensemble_loss = torch.stack(ensemble_loss).mean()
@@ -64,7 +67,7 @@ class Ensemble(pl.LightningModule):
         ensemble_loss = []
         # We cycle through constituent models and ground truth annotations, repeating annotations if nessesary
         for i, (y_hat, y) in enumerate(zip(y_hats, cycle(ys))):
-            loss = F.cross_entropy(y_hat, y[:, 0])
+            loss = self.lossfun(y_hat, y[:, 0])
             self.log(f"val/loss_model_{i}", loss)
             ensemble_loss.append(loss)
         ensemble_loss = torch.stack(ensemble_loss).mean()
@@ -94,7 +97,7 @@ class Ensemble(pl.LightningModule):
         ensemble_loss = []
         # We cycle through constituent models and ground truth annotations, repeating annotations if nessesary
         for i, (y_hat, y) in enumerate(zip(y_hats, cycle(ys))):
-            loss = F.cross_entropy(y_hat, y[:, 0])
+            loss = self.lossfun(y_hat, y[:, 0])
             self.log(f"test/loss_model_{i}", loss)
             ensemble_loss.append(loss)
         ensemble_loss = torch.stack(ensemble_loss).mean()
@@ -197,6 +200,13 @@ class Ensemble(pl.LightningModule):
             nargs="+",
             default=[32, 64, 128, 192],
             help="Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192",
+        )
+        parser.add_argument(
+            "--class_weights",
+            type=float,
+            nargs="+",
+            default=[1., 1.],
+            help="Weight assigned to the classes in the loss computation. Default 1 1",
         )
         parser.add_argument("--learning_rate", type=float, default=0.0001)
         return parser

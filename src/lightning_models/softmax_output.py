@@ -17,12 +17,16 @@ class SoftmaxOutput(pl.LightningModule):
         # add default for backwards-compatebility
         if 'compute_comparison_metrics' not in self.hparams:
             self.hparams.compute_comparison_metrics = True
+        if 'class_weights' not in self.hparams:
+            self.hparams.class_weights = [1., 1.]
 
         self.unet = Unet(
             input_channels=self.hparams.data_dims[0],
             num_classes=self.hparams.data_classes,
             num_filters=self.hparams.num_filters,
         )
+        weight = torch.tensor(self.hparams.class_weights)
+        self.lossfun = torch.nn.CrossEntropyLoss(weight=weight)
 
     def forward(self, x):
         """perfroms a probability-mask prediction
@@ -40,7 +44,7 @@ class SoftmaxOutput(pl.LightningModule):
         x, ys = batch
         y = ys[torch.randint(len(ys), ())]
         y_hat = self.unet(x)
-        loss = F.cross_entropy(y_hat, y[:, 0])
+        loss = self.lossfun(y_hat, y[:, 0])
         self.log("train/loss", loss)
         return loss
 
@@ -48,7 +52,7 @@ class SoftmaxOutput(pl.LightningModule):
         x, ys = batch
         y_hat = self.unet(x)
         for y in ys:
-            loss = F.cross_entropy(y_hat, y[:, 0])
+            loss = self.lossfun(y_hat, y[:, 0])
             self.log("val/loss", loss)
         if self.hparams.compute_comparison_metrics:
             # calculate aditional metrics every 5 epochs
@@ -69,7 +73,7 @@ class SoftmaxOutput(pl.LightningModule):
         x, ys = batch
         y_hat = self.unet(x)
         for y in ys:
-            loss = F.cross_entropy(y_hat, y[:, 0])
+            loss = self.lossfun(y_hat, y[:, 0])
             self.log("test/loss", loss)
         if self.hparams.compute_comparison_metrics:
             for sample_count in [1, 4, 8, 16]:
@@ -147,6 +151,13 @@ class SoftmaxOutput(pl.LightningModule):
             nargs="+",
             default=[32, 64, 128, 192],
             help="Number of Channels for the U-Net architecture. Decoder uses the reverse. Default: 32 64 128 192",
+        )
+        parser.add_argument(
+            "--class_weights",
+            type=float,
+            nargs="+",
+            default=[1., 1.],
+            help="Weight assigned to the classes in the loss computation. Default 1 1",
         )
         parser.add_argument("--learning_rate", type=float, default=0.0001)
         return parser
