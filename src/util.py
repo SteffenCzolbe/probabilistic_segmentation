@@ -106,8 +106,8 @@ def load_model_from_checkpoint(model_path):
     try:
         model = model_class.load_from_checkpoint(
             checkpoint_path=checkpoint, strict=True)
-    except RuntimeError, e:
-        print('WARNING: ', e.message)
+    except RuntimeError as e:
+        print('WARNING: ', e)
         print('reloading model with non-strict mapping...')
         model = model_class.load_from_checkpoint(
             checkpoint_path=checkpoint, strict=False)
@@ -142,5 +142,5 @@ def binary_entropy(p):
     Returns:
         Tensor Bx1xHxw
     """
-    p = torch.cat([p, 1-p])
+    p = torch.cat([p, 1-p], dim=1)
     return entropy(p)
