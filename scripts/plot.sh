@@ -14,8 +14,5 @@ python3 -m src.plot.correlation --dataset lidc --output_file plots/correlation.p
 # Uncertainty - Categorical
 python3 -m src.plot.uncertainty_by_condition --dataset lidc --output_file plots/uncertainty_by_condition.png plots/uncertainty_by_condition.pdf
 
-
-python3 -m src.plot.model_vs_annotator_uncertainty --model softm --test_results_file plots/experiment_results.pickl --output_file plots/uncertainty_correl_softm.png plots/uncertainty_correl_softm.pdf
-python3 -m src.plot.model_vs_annotator_uncertainty --model ensemble --test_results_file plots/experiment_results.pickl --output_file plots/uncertainty_correl_ensemble.png plots/uncertainty_correl_ensemble.pdf
-python3 -m src.plot.model_vs_annotator_uncertainty --model mcdropout --test_results_file plots/experiment_results.pickl --output_file plots/uncertainty_correl_mcdropout.png plots/uncertainty_correl_mcdropout.pdf
-python3 -m src.plot.model_vs_annotator_uncertainty --model punet --test_results_file plots/experiment_results.pickl --output_file plots/uncertainty_correl_punet.png plots/uncertainty_correl_punet.pdf
+# Model uncertainty vs annotator uncertainty
+python3 -m src.plot.model_vs_annotator_uncertainty --test_results_file plots/experiment_results.pickl --output_file plots/uncertainty_correl.png plots/uncertainty_correl.pdf

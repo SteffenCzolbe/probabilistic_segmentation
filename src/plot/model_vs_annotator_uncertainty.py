@@ -1,3 +1,5 @@
+from collections import defaultdict
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from argparse import ArgumentParser
@@ -5,43 +7,79 @@ import pickle
 import numpy as np
 
 
-def load_data(test_results_file, model):
+def load_data(test_results_file):
+    MAX_POINTS_PER_CLASS = 3000
     with open(test_results_file, 'rb') as f:
         test_results = pickle.load(f)
 
-    model_uncert = test_results['lidc'][model]['per_sample']["test/model_uncertainty"]
-    annot_uncert = test_results['lidc'][model]['per_sample']["test/annotator_uncertainty"]
+    models = test_results['lidc'].keys()
+    data = defaultdict(list)
+    median = defaultdict(list)
+    for model in models:
+        model_uncert = test_results['lidc'][model]['per_sample']["test/model_uncertainty"]
+        annot_uncert = test_results['lidc'][model]['per_sample']["test/annotator_uncertainty"]
 
-    # sub-sample 1000 pixels
-    N = len(model_uncert)
-    idx = np.random.randint(0, N, size=10000)
-    return model_uncert[idx], annot_uncert[idx]
+        idx_agree = annot_uncert <= 0.
+        idx_mostly_agree = (annot_uncert > 0.) & (annot_uncert < 1.)
+        idx_disagree = annot_uncert >= 1.0
 
+        for agreement, idx in [('agree ($H(p) = 0$)', idx_agree), ('mostly agree ($0 < H(p) < 1$)', idx_mostly_agree), ('disagree ($H(p) = 1$)', idx_disagree)]:
+            model_uncertainty = model_uncert[idx]
 
-def plot(annot_uncert, model_uncert, output_files):
-    plt.scatter(annot_uncert, model_uncert)
-    ax = sns.regplot(x=annot_uncert, y=model_uncert,
-                     color="b", scatter_kws={'alpha': 0.3})
-    ax.set_xlabel("$H(p)$")
-    ax.set_ylabel("$H(\hat{p})$")
-    ax.set_title("Pixel-wise Evaluation")
-    fig = ax.get_figure()
-    for f in output_files:
-        fig.savefig(f)
+            # subsample 3000 pixels
+            if len(model_uncertainty) > MAX_POINTS_PER_CLASS:
+                model_uncertainty = np.random.choice(
+                    model_uncertainty, size=MAX_POINTS_PER_CLASS, replace=False)
+
+            model_name = test_results['lidc'][model]['model_name']
+            data['model_uncertainty'] += list(model_uncertainty)
+            median['model_uncertainty'].append(np.median(model_uncertainty))
+            data['model'] += [
+                model_name for _ in range(len(model_uncertainty))]
+            median['model'].append(model_name)
+            data['annotator_agreement'] += [agreement
+                                            for _ in range(len(model_uncertainty))]
+            median['annotator_agreement'].append(agreement)
+
+    # dataframe columns: #ged,  #samples, model
+    return pd.DataFrame(data), pd.DataFrame(median)
 
 
 def main(args):
-    model_uncert, annot_uncert = load_data(
-        args.test_results_file, args.model)
-    plot(annot_uncert, model_uncert, args.output_file)
+    # load data  minto pandas dataframes
+    df_data, df_median = load_data(args.test_results_file)
+    sns.set_theme(style="whitegrid")
+
+    # plot datapoints
+    ax = sns.stripplot(x='annotator_agreement', y="model_uncertainty", hue="model",
+                       data=df_data, palette="Set2", dodge=True,
+                       size=1, jitter=0.2)
+
+    # plot means on top
+    ax = sns.stripplot(x='annotator_agreement', y="model_uncertainty", hue="model",
+                       data=df_median, palette="Set2", dodge=True,
+                       size=9, jitter=0, edgecolor='black', ax=ax, linewidth=1)
+
+    # Get the handles and labels
+    handles, labels = ax.get_legend_handles_labels()
+
+    # When creating the legend, only use the first 4 elements
+    l = plt.legend(handles[:4], labels[:4])
+
+    # y-label
+    ax.set_xlabel('Expert Annotators')
+    ax.set_ylabel('Model Uncertainty $H(\hat{p})$')
+
+    # save
+    fig = ax.get_figure()
+    for f in args.output_file:
+        fig.savefig(f)
 
 
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
-        '--model', type=str, help='Model to plot')
-    parser.add_argument(
-        '--test_results_file', type=str, help='File with test results.')
+        '--test_results_file', type=str, default='plots/experiment_results.pickl', help='File with test results.')
     parser.add_argument(
         '--output_file', type=str, nargs="+", help='File to save the results in.')
     args = parser.parse_args()
