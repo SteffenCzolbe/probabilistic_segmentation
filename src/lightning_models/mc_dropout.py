@@ -17,6 +17,8 @@ class MCDropout(pl.LightningModule):
         # add default for backwards-compatebility
         if 'compute_comparison_metrics' not in self.hparams:
             self.hparams.compute_comparison_metrics = True
+        if 'class_weights' not in self.hparams:
+            self.hparams.class_weights = [1., 1.]
 
         self.net = MCDropoutUnet(
             input_channels=self.hparams.data_dims[0],
@@ -25,6 +27,8 @@ class MCDropout(pl.LightningModule):
             batch_norm=self.hparams.batch_norm,
             p=self.hparams.dropout_prob,
         )
+        weight = torch.tensor(self.hparams.class_weights)
+        self.lossfun = torch.nn.CrossEntropyLoss(weight=weight)
 
     def forward(self, x):
         """perfroms a probability-mask prediction
@@ -40,7 +44,7 @@ class MCDropout(pl.LightningModule):
         x, ys = batch
         y = ys[torch.randint(len(ys), ())]
         y_hat = self.net(x)
-        loss = F.cross_entropy(y_hat, y[:, 0])
+        loss = self.lossfun(y_hat, y[:, 0])
         self.log("train/loss", loss)
         return loss
 
@@ -49,7 +53,7 @@ class MCDropout(pl.LightningModule):
         x, ys = batch
         for y in ys:
             y_hat = self.net(x)
-            loss = F.cross_entropy(y_hat, y[:, 0])
+            loss = self.lossfun(y_hat, y[:, 0])
             self.log("val/loss", loss)
         if self.hparams.compute_comparison_metrics:
             # calculate aditional metrics every 5 epochs
@@ -71,7 +75,7 @@ class MCDropout(pl.LightningModule):
         x, ys = batch
         for y in ys:
             y_hat = self.net(x)
-            loss = F.cross_entropy(y_hat, y[:, 0])
+            loss = self.lossfun(y_hat, y[:, 0])
             self.log("test/loss", loss)
         if self.hparams.compute_comparison_metrics:
             for sample_count in [1, 4, 8, 16]:
@@ -169,6 +173,13 @@ class MCDropout(pl.LightningModule):
             type=float,
             default=0,
             help="L2 regularization on weights and biases called in Optimizer.",
+        )
+        parser.add_argument(
+            "--class_weights",
+            type=float,
+            nargs="+",
+            default=[1., 1.],
+            help="Weight assigned to the classes in the loss computation. Default 1 1",
         )
 
         return parser
