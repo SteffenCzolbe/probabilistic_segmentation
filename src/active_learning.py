@@ -54,7 +54,8 @@ def main():
     args = parser.parse_args()
 
     class ResetTrainer:
-        def __init__(self):
+        def __init__(self, strategy, iter):
+
             self.checkpointing_callback = pl.callbacks.ModelCheckpoint(
                 monitor="val/loss", mode="min", verbose=False
             )
@@ -67,11 +68,12 @@ def main():
             )
             self.trainer = pl.Trainer.from_argparse_args(
                 args,
-                checkpoint_callback=self.checkpointing_callback,
                 callbacks=[self.early_stop_callback],
                 replace_sampler_ddp=False,
                 logger=pl.loggers.TensorBoardLogger(
-                    save_dir=os.getcwd(), name=f"active_logs/{args.model}"
+                    save_dir=os.getcwd(),
+                    name=f"active_logs/{args.model}/{strategy}",
+                    version=f"{strategy}_{iter}",
                 ),
             )
 
@@ -86,20 +88,22 @@ def main():
     # active_learning
     # ------------
     model_cls = util.get_model_cls(args.model)
-    test_loss = {}
+    test = {}
     for strategy in ["random", "output_uncertainty"]:
         pl.seed_everything(1234)
         model = model_cls(args)
-        test_loss[strategy] = []
+        test[strategy] = []
+        test["mask_" + strategy] = []
         with torch.no_grad():
             device = "cuda" if torch.cuda.is_available() else "cpu"
             dataset.augment = None
             size_Q = len(dataset.train_dataloader().dataset)
-            mask = torch.randint(size_Q, size=(2,)).tolist()
+            mask = torch.randint(size_Q, size=(50,)).tolist()
             dataset.sampler = mask
-        trainer = ResetTrainer().trainer
+        trainer = ResetTrainer(strategy, 0).trainer
         trainer.fit(model, dataset)
-        test_loss[strategy].append(trainer.test()[0]["test/loss"])
+        test[strategy].append(trainer.test()[0]["test/loss"])
+        test["mask_" + strategy].append(mask)
         for i in range(args.num_iters):
             print(f"{strategy}************{i+1}/{args.num_iters}***********")
             with torch.no_grad():
@@ -109,7 +113,8 @@ def main():
                         f"lightning_logs/{args.model}_{args.dataset}_{strategy}_{i+1}.pt",
                     )
                 if strategy == "random":
-                    mask.append(int(torch.randint(size_Q, size=(1,))))
+                    next_query = int(torch.randint(size_Q, size=(1,)))
+                    mask.append(next_query)
                 elif strategy == "output_uncertainty":
                     model.to(device)
                     output_entropy = []
@@ -123,18 +128,18 @@ def main():
                     next_query = int(torch.argmax(output_entropy))
                     mask.append(next_query)
                 dataset.sampler = mask
-            trainer = ResetTrainer().trainer
+            trainer = ResetTrainer(strategy, i + 1).trainer
             trainer.fit(model, dataset)
-            test_loss[strategy].append(trainer.test()[0]["test/loss"])
-        print(mask)
+            test[strategy].append(trainer.test()[0]["test/loss"])
+            test["mask_" + strategy].append(next_query)
 
     # ------------
     # plot
     # ------------
-    print(test_loss)
+    print(test)
     plt.figure()
-    plt.plot(test_loss["random"], label="random sampling")
-    plt.plot(test_loss["output_uncertainty"], label="uncertainty sampling")
+    plt.plot(test["random"], label="random sampling")
+    plt.plot(test["output_uncertainty"], label="uncertainty sampling")
     plt.legend()
     plt.xlabel("Iterations of active learning")
     plt.ylabel("Test loss")
