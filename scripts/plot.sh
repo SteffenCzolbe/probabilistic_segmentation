@@ -9,7 +9,7 @@ python3 -m src.plot.ged_plot --dataset lidc --output_file plots/lidc_ged.png plo
 python3 -m src.plot.soft_dice_plot --dataset lidc --output_file plots/lidc_soft_dice.png plots/lidc_soft_dice.pdf
 
 # Uncertainty - Seg error correlation
-python3 -m src.plot.correlation --dataset lidc --output_file plots/lidc_segerr_uncert_correlation_.png plots/idc_segerr_uncert_correlation.pdf
+python3 -m src.plot.correlation --dataset lidc --output_file plots/lidc_segerr_uncert_correlation_.png plots/lidc_segerr_uncert_correlation.pdf
 python3 -m src.plot.correlation --dataset isic18 --output_file plots/isic18_segerr_uncert_correlation.png plots/isic18_segerr_uncert_correlation.pdf
 
 # Uncertainty - Categorical
