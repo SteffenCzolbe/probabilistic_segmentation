@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 import src.util as util
 import torch
 import matplotlib.pyplot as plt
+import os
 
 
 def main():
@@ -68,8 +69,10 @@ def main():
                 args,
                 checkpoint_callback=self.checkpointing_callback,
                 callbacks=[self.early_stop_callback],
-                logger=False,
                 replace_sampler_ddp=False,
+                logger=pl.loggers.TensorBoardLogger(
+                    save_dir=os.getcwd(), name=f"active_logs/{args.model}"
+                ),
             )
 
     # ------------
