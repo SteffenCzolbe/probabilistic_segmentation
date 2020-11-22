@@ -103,7 +103,14 @@ def load_model_from_checkpoint(model_path):
     model_class = get_supported_models()[model_type]
     checkpoint = get_checkpoint_path(model_path)
     print(f'Loading model {model_type} from checkpoint file {checkpoint}')
-    model = model_class.load_from_checkpoint(checkpoint_path=checkpoint)
+    try:
+        model = model_class.load_from_checkpoint(
+            checkpoint_path=checkpoint, strict=True)
+    except RuntimeError as e:
+        print('WARNING: ', e)
+        print('reloading model with non-strict mapping...')
+        model = model_class.load_from_checkpoint(
+            checkpoint_path=checkpoint, strict=False)
 
     return model
 
@@ -135,5 +142,5 @@ def binary_entropy(p):
     Returns:
         Tensor Bx1xHxw
     """
-    p = torch.cat([p, 1-p])
+    p = torch.cat([p, 1-p], dim=1)
     return entropy(p)
