@@ -23,7 +23,7 @@ def load_data(test_results_file):
         idx_mostly_agree = (annot_uncert > 0.) & (annot_uncert < 1.)
         idx_disagree = annot_uncert >= 1.0
 
-        for agreement, idx in [('agree ($H(p) = 0$)', idx_agree), ('mostly agree ($0 < H(p) < 1$)', idx_mostly_agree), ('disagree ($H(p) = 1$)', idx_disagree)]:
+        for agreement, idx in [('agree', idx_agree), ('somewhat agree ', idx_mostly_agree), ('disagree', idx_disagree)]:
             model_uncertainty = model_uncert[idx]
 
             # subsample 3000 pixels
