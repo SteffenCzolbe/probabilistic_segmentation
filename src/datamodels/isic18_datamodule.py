@@ -26,6 +26,7 @@ class ISIC18DataModule(pl.LightningDataModule):
         self.classes = 2
         self.augment = RandomAffine()
         self.transform = transforms.Compose([
+            transforms.Pad(padding=1, padding_mode='edge'),
             transforms.ToTensor(),
         ])
 
