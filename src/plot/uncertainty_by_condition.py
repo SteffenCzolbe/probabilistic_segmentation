@@ -54,8 +54,9 @@ def main(args):
     # Get the handles and labels
     handles, labels = ax.get_legend_handles_labels()
 
-    # When creating the legend, only use the first 4 elements
-    l = plt.legend(handles[:4], labels[:4])
+    # When creating the legend, dont use duplicate entries
+    n = len(handles) // 2
+    l = plt.legend(handles[:n], labels[:n])
 
     # y-label
     ax.set_ylabel('Uncertainty $H$')
