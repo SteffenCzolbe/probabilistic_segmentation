@@ -23,7 +23,7 @@ def load_data(test_results_file):
         idx_mostly_agree = (annot_uncert > 0.) & (annot_uncert < 1.)
         idx_disagree = annot_uncert >= 1.0
 
-        for agreement, idx in [('agree ($H(p) = 0$)', idx_agree), ('mostly agree ($0 < H(p) < 1$)', idx_mostly_agree), ('disagree ($H(p) = 1$)', idx_disagree)]:
+        for agreement, idx in [('agree', idx_agree), ('somewhat agree ', idx_mostly_agree), ('disagree', idx_disagree)]:
             model_uncertainty = model_uncert[idx]
 
             # subsample 3000 pixels
@@ -63,8 +63,9 @@ def main(args):
     # Get the handles and labels
     handles, labels = ax.get_legend_handles_labels()
 
-    # When creating the legend, only use the first 4 elements
-    l = plt.legend(handles[:4], labels[:4])
+    # When creating the legend, dont use duplicate entries
+    n = len(handles) // 2
+    l = plt.legend(handles[:n], labels[:n])
 
     # y-label
     ax.set_xlabel('Expert Annotators')
