@@ -104,7 +104,7 @@ def main():
         trainer = ResetTrainer(strategy, 0).trainer
         trainer.fit(model, dataset)
         test[strategy].append(trainer.test()[0]["test/loss"])
-        test["mask_" + strategy].append(mask)
+        test["mask_" + strategy] = mask
         for i in range(args.num_iters):
             print(f"{strategy}************{i+1}/{args.num_iters}***********")
             with torch.no_grad():
@@ -113,7 +113,10 @@ def main():
                         test[strategy],
                         f"active_logs/loss_{args.model}_{args.dataset}_{strategy}_{i+1}.pt",
                     )
-                    torch.save(test['mask_'+strategy], f"active_logs/mask_{args.model}_{args.dataset}_{strategy}_{i+1}.pt")
+                    torch.save(
+                        test["mask_" + strategy],
+                        f"active_logs/mask_{args.model}_{args.dataset}_{strategy}_{i+1}.pt",
+                    )
 
                 if strategy == "random":
                     next_query = int(torch.randint(size_Q, size=(1,)))
