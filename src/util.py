@@ -11,20 +11,19 @@ def to_device(obj, device):
     Args:
         obj ([type]): [description]
     """
-    if hasattr(obj, 'to'):
+    if hasattr(obj, "to"):
         return obj.to(device)
-    elif hasattr(obj, '__iter__'):
+    elif hasattr(obj, "__iter__"):
         return [to_device(o, device) for o in obj]
     else:
-        raise Exception(f'Do not know how to map object {obj} to {device}')
+        raise Exception(f"Do not know how to map object {obj} to {device}")
 
 
 def get_supported_datamodules():
     from src.datamodels.lidc_datamodule import LIDCDataModule
     from src.datamodels.isic18_datamodule import ISIC18DataModule
 
-    supported_datamodels = {'lidc': LIDCDataModule,
-                            'isic18': ISIC18DataModule}
+    supported_datamodels = {"lidc": LIDCDataModule, "isic18": ISIC18DataModule}
 
     return supported_datamodels
 
@@ -42,7 +41,8 @@ def load_damodule(dataset_name, batch_size=32):
     supported_datamodels = get_supported_datamodules()
     if dataset_name not in supported_datamodels:
         raise Exception(
-            f'Dataset {dataset_name} unknown. Supported datasets: {supported_datamodels.keys()}')
+            f"Dataset {dataset_name} unknown. Supported datasets: {supported_datamodels.keys()}"
+        )
 
     datamodule = supported_datamodels[dataset_name](batch_size=batch_size)
 
@@ -80,8 +80,9 @@ def get_supported_models():
     supported_models = [SoftmaxOutput, MCDropout, ProbUnet, Ensemble]
 
     # remap supported models to dict
-    supported_models = dict([(model.model_shortname(), model)
-                             for model in supported_models])
+    supported_models = dict(
+        [(model.model_shortname(), model) for model in supported_models]
+    )
     return supported_models
 
 
@@ -89,7 +90,8 @@ def get_model_cls(model_name):
     supported_models = get_supported_models()
     if model_name not in supported_models:
         raise Exception(
-            f'Model {model_name} unknown. Models available: {supported_models.keys()}.')
+            f"Model {model_name} unknown. Models available: {supported_models.keys()}."
+        )
     return supported_models[model_name]
 
 
@@ -102,15 +104,17 @@ def load_model_from_checkpoint(model_path):
     # load model
     model_class = get_supported_models()[model_type]
     checkpoint = get_checkpoint_path(model_path)
-    print(f'Loading model {model_type} from checkpoint file {checkpoint}')
+    print(f"Loading model {model_type} from checkpoint file {checkpoint}")
     try:
         model = model_class.load_from_checkpoint(
-            checkpoint_path=checkpoint, strict=True)
+            checkpoint_path=checkpoint, strict=True
+        )
     except RuntimeError as e:
-        print('WARNING: ', e)
-        print('reloading model with non-strict mapping...')
+        print("WARNING: ", e)
+        print("reloading model with non-strict mapping...")
         model = model_class.load_from_checkpoint(
-            checkpoint_path=checkpoint, strict=False)
+            checkpoint_path=checkpoint, strict=False
+        )
 
     return model
 
@@ -125,7 +129,7 @@ def entropy(p):
     Returns:
         Tensor Bx1xHxw
     """
-    mask = p > 0
+    mask = p > 0.00001
     h = torch.zeros_like(p)
     h[mask] = torch.log2(1 / p[mask])
     H = torch.sum(p * h, dim=1, keepdim=True)
@@ -142,5 +146,5 @@ def binary_entropy(p):
     Returns:
         Tensor Bx1xHxw
     """
-    p = torch.cat([p, 1-p], dim=1)
+    p = torch.cat([p, 1 - p], dim=1)
     return entropy(p)
