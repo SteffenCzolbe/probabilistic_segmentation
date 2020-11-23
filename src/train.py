@@ -41,6 +41,13 @@ def cli_main():
         default=True,
         help="Compute GED etc. metrics in val and test steps.",
     )
+    parser.add_argument(
+        "--early_stop_patience",
+        type=int,
+        default=10,
+        help="Early stopping oatience, in Epcohs. Default: 10",
+    )
+
     parser = pl.Trainer.add_argparse_args(parser)
     for model in util.get_supported_models().values():
         parser = model.add_model_specific_args(parser)
@@ -68,7 +75,7 @@ def cli_main():
     )
     # early stopping
     early_stop_callback = pl.callbacks.EarlyStopping(
-        monitor="val/loss", min_delta=0.00, patience=10, verbose=True, mode="min"
+        monitor="val/loss", min_delta=0.00, patience=args.early_stop_patience, verbose=True, mode="min"
     )
 
     trainer = pl.Trainer.from_argparse_args(
