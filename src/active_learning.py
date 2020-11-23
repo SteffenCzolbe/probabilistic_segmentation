@@ -83,6 +83,7 @@ def main():
     dataset = util.load_damodule(args.dataset, batch_size=args.batch_size)
     args.data_dims = dataset.dims
     args.data_classes = dataset.classes
+    dataset.num_workers = 32
 
     # ------------
     # active_learning
@@ -109,9 +110,11 @@ def main():
             with torch.no_grad():
                 if (i + 1) % 10 == 0:
                     torch.save(
-                        test_loss[strategy],
-                        f"lightning_logs/{args.model}_{args.dataset}_{strategy}_{i+1}.pt",
+                        test[strategy],
+                        f"active_logs/loss_{args.model}_{args.dataset}_{strategy}_{i+1}.pt",
                     )
+                    torch.save(test['mask_'+strategy], f"active_logs/mask_{args.model}_{args.dataset}_{strategy}_{i+1}.pt")
+
                 if strategy == "random":
                     next_query = int(torch.randint(size_Q, size=(1,)))
                     mask.append(next_query)

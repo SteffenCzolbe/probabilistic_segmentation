@@ -21,7 +21,7 @@ class LIDCDataModule(pl.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.sampler = None
-
+        self.num_workers=0
         self.dims = (1, 128, 128)
         self.classes = 2
         self.augment = RandomAffine()
@@ -43,15 +43,15 @@ class LIDCDataModule(pl.LightningDataModule):
         dataset = LIDCDataset(
             self.data_dir, "train", transform=self.transform, augment=self.augment
         )
-        return DataLoader(dataset, batch_size=self.batch_size, sampler=self.sampler)
+        return DataLoader(dataset, batch_size=self.batch_size, sampler=self.sampler, num_workers=self.num_workers)
 
     def val_dataloader(self):
         dataset = LIDCDataset(self.data_dir, "val", transform=self.transform)
-        return DataLoader(dataset, batch_size=self.batch_size)
+        return DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
         dataset = LIDCDataset(self.data_dir, "test", transform=self.transform)
-        return DataLoader(dataset, batch_size=self.batch_size)
+        return DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 
 class LIDCDataset(Dataset):
