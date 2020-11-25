@@ -41,9 +41,11 @@ class Fig:
         self.fig.suptitle(title)
 
         # extend empty dimensions to array
-        if cols == 1:
+        if cols == 1 and rows == 1:
+            self.axs = np.array([[self.axs]])
+        elif cols == 1:
             self.axs = np.array([[ax] for ax in self.axs])
-        if rows == 1:
+        elif rows == 1:
             self.axs = np.array([self.axs])
 
         # hide all axis
@@ -154,7 +156,7 @@ class Fig:
         img = torch.tensor(img).permute(-1, 0, 1)
         self.plot_overlay(row, col, img, alpha=alpha)
 
-    def plot_overlay(self, row, col, mask, alpha=0.4, vmin=None, vmax=None):
+    def plot_overlay(self, row, col, mask, alpha=0.4, vmin=None, vmax=None, cmap='jet', colorbar=False, colorbar_label=None):
         """
         imposes an overlay onto a plot
         Overlay needs to be of the form C x H x W
@@ -170,10 +172,24 @@ class Fig:
         # convert to numpy
         mask = image_to_numpy(mask)
         if len(mask.shape) == 2:
+            # Add an alpha-channel to th olormap
+            from matplotlib.colors import LinearSegmentedColormap
+            # get colormap
+            ncolors = 256
+            color_array = plt.get_cmap(cmap)(range(ncolors))
+            # change alpha values
+            color_array[:, -1] = np.linspace(0.0, 1.0, ncolors)
+            # create a colormap object
+            modif_cmap_name = cmap+'_alpha'
+            map_object = LinearSegmentedColormap.from_list(
+                name=modif_cmap_name, colors=color_array)
+            # register this new colormap with matplotlib
+            plt.register_cmap(cmap=map_object)
+
             # plot greyscale image
-            self.axs[row, col].imshow(
+            im = self.axs[row, col].imshow(
                 mask,
-                cmap="jet",
+                cmap=modif_cmap_name,
                 vmin=vmin,
                 vmax=vmax,
                 interpolation="none",
@@ -181,7 +197,13 @@ class Fig:
             )
         elif len(mask.shape) in [3, 4]:
             # last channel is color channel
-            self.axs[row, col].imshow(mask, alpha=alpha)
+            im = self.axs[row, col].imshow(mask, alpha=alpha)
+
+        if colorbar:
+            cbar = self.fig.colorbar(
+                im, orientation='horizontal', shrink=0.5, anchor=(0.5, 1))
+            cbar.ax.set_xlabel(colorbar_label)
+
         return self
 
     def show(self):

@@ -127,7 +127,7 @@ def entropy(p):
         p (Tensor BxCxHxW): probability per class
 
     Returns:
-        Tensor Bx1xHxw
+        Tensor Bx1xHxW
     """
     mask = p > 0.00001
     h = torch.zeros_like(p)
@@ -144,7 +144,20 @@ def binary_entropy(p):
         p (Tensor Bx1xHxW): probability per class
 
     Returns:
-        Tensor Bx1xHxw
+        Tensor Bx1xHxW
     """
     p = torch.cat([p, 1 - p], dim=1)
     return entropy(p)
+
+
+def onehot(tensor, num_classes):
+    """converts an int-tensor into one-hot encoding
+
+    Args:
+        Long tensor: Bx1xHxW
+
+
+    Returns:
+        Float tensor Bx1xHxW
+    """
+    return torch.nn.functional.one_hot(tensor[:, 0], num_classes=num_classes).permute(0, -1, 1, 2)
