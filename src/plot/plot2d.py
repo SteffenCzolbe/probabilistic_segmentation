@@ -169,27 +169,53 @@ class Fig:
             vmin: optinal lower bound for color scaling
             vmax: optional higher bound for color scaling
         """
+        # Add color bar, as per https://github.com/matplotlib/matplotlib/issues/15010
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from matplotlib.transforms import Bbox
+        from mpl_toolkits.axes_grid1 import make_axes_locatable, axes_size
+
+        class RemainderFixed(axes_size.Scaled):
+            def __init__(self, xsizes, ysizes, divider):
+                self.xsizes = xsizes
+                self.ysizes = ysizes
+                self.div = divider
+
+            def get_size(self, renderer):
+                xrel, xabs = axes_size.AddList(
+                    self.xsizes).get_size(renderer)
+                yrel, yabs = axes_size.AddList(
+                    self.ysizes).get_size(renderer)
+                bb = Bbox.from_bounds(
+                    *self.div.get_position()).transformed(self.div._fig.transFigure)
+                w = bb.width/self.div._fig.dpi - xabs
+                h = bb.height/self.div._fig.dpi - yabs
+                return 0, min([w, h])
+
+        def make_square_axes_with_colorbar(ax, size=0.1, pad=0.1):
+            """ Make an axes square, add a colorbar axes next to it, 
+                Parameters: size: Size of colorbar axes in inches
+                            pad : Padding between axes and cbar in inches
+                Returns: colorbar axes
+            """
+            divider = make_axes_locatable(ax)
+            margin_size = axes_size.Fixed(size)
+            pad_size = axes_size.Fixed(pad)
+            xsizes = [pad_size, margin_size]
+            yhax = divider.append_axes(
+                "right", size=margin_size, pad=pad_size)
+            divider.set_horizontal(
+                [RemainderFixed(xsizes, [], divider)] + xsizes)
+            divider.set_vertical([RemainderFixed(xsizes, [], divider)])
+            return yhax
+
         # convert to numpy
         mask = image_to_numpy(mask)
         if len(mask.shape) == 2:
-            # Add an alpha-channel to th olormap
-            from matplotlib.colors import LinearSegmentedColormap
-            # get colormap
-            ncolors = 256
-            color_array = plt.get_cmap(cmap)(range(ncolors))
-            # change alpha values
-            color_array[:, -1] = np.linspace(0.0, 1.0, ncolors)
-            # create a colormap object
-            modif_cmap_name = cmap+'_alpha'
-            map_object = LinearSegmentedColormap.from_list(
-                name=modif_cmap_name, colors=color_array)
-            # register this new colormap with matplotlib
-            plt.register_cmap(cmap=map_object)
-
             # plot greyscale image
             im = self.axs[row, col].imshow(
                 mask,
-                cmap=modif_cmap_name,
+                cmap=cmap,
                 vmin=vmin,
                 vmax=vmax,
                 interpolation="none",
@@ -200,9 +226,10 @@ class Fig:
             im = self.axs[row, col].imshow(mask, alpha=alpha)
 
         if colorbar:
-            cbar = self.fig.colorbar(
-                im, orientation='horizontal', shrink=0.5, anchor=(0.5, 1))
-            cbar.ax.set_xlabel(colorbar_label)
+            cax = make_square_axes_with_colorbar(
+                self.axs[row, col], size=0.1, pad=0.1)
+            cbar = self.fig.colorbar(im, cax=cax)
+            cbar.ax.set_ylabel(colorbar_label)
 
         return self
 

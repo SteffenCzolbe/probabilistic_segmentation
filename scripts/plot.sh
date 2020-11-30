@@ -18,3 +18,9 @@ python3 -m src.plot.uncertainty_by_condition --dataset isic18 --output_file plot
 
 # Model uncertainty vs annotator uncertainty
 python3 -m src.plot.model_vs_annotator_uncertainty --test_results_file plots/experiment_results.pickl --output_file plots/lidc_uncertainty_correl.png plots/lidc_uncertainty_correl.pdf
+
+# Teaser image (to be cleaned up in inkscape)
+python3 -m src.plot.uncertainty_heatmap_teaser --model_path trained_models/isic18/softm/ --samples 16 --output_folder plots/softm
+
+# Qualitative samples
+python3 -m src.plot.uncertainty_heatmaps --model_dir trained_models/isic18/ --output_file plots/isic18_uncertainties.png
