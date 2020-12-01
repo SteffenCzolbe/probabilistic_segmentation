@@ -2,10 +2,9 @@ venv
 lightning_logs*
 trained_models*
 .vscode
+plots/*/*.png
+plots/*/*.pdf
 plots/experiment_results.pickl
-plots/isic18_sample_teaser
-plots_*
-inspect*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

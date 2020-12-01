@@ -22,6 +22,14 @@ python3 -m src.plot.model_vs_annotator_uncertainty --test_results_file plots/exp
 # Teaser image (to be cleaned up in inkscape)
 python3 -m src.plot.isic18_sample_teaser --model_path trained_models/isic18/softm/ --samples 16 --output_folder plots/isic18_sample_teaser
 
+# Qualitative uncertainty
+python3 -m src.plot.qualitative_uncertainty --output_file plots/qualitative_uncertainty.png plots/qualitative_uncertainty.pdf
+pdfcrop plots/qualitative_uncertainty.pdf plots/qualitative_uncertainty.pdf
+
 # Qualitative samples isic18
-python3 -m src.plot.isic18_samples --model_dir trained_models/isic18/ --output_file plots/isic18_samples.png plots/isic18_samples.pdf
-pdfcrop plots/isic18_samples.pdf plots/isic18_samples.pdf
+python3 -m src.plot.qualitative_samples --model_dir trained_models/isic18 --sample_idx 93 --output_file plots/qualitative_isic_samples.png plots/qualitative_isic_samples.pdf
+pdfcrop plots/qualitative_isic_samples.pdf plots/qualitative_isic_samples.pdf
+
+# Qualitative samples lidc
+python3 -m src.plot.qualitative_samples --model_dir trained_models/lidc --sample_idx 138 --output_file plots/qualitative_lidc_samples.png plots/qualitative_lidc_samples.pdf
+pdfcrop plots/qualitative_lidc_samples.pdf plots/qualitative_lidc_samples.pdf
