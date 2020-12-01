@@ -3,7 +3,7 @@ lightning_logs*
 trained_models*
 .vscode
 plots/experiment_results.pickl
-plots/softm
+plots/isic18_sample_teaser
 plots_*
 inspect*
 

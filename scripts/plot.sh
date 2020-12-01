@@ -20,7 +20,8 @@ python3 -m src.plot.uncertainty_by_condition --dataset isic18 --output_file plot
 python3 -m src.plot.model_vs_annotator_uncertainty --test_results_file plots/experiment_results.pickl --output_file plots/lidc_uncertainty_correl.png plots/lidc_uncertainty_correl.pdf
 
 # Teaser image (to be cleaned up in inkscape)
-python3 -m src.plot.uncertainty_heatmap_teaser --model_path trained_models/isic18/softm/ --samples 16 --output_folder plots/softm
+python3 -m src.plot.isic18_sample_teaser --model_path trained_models/isic18/softm/ --samples 16 --output_folder plots/isic18_sample_teaser
 
-# Qualitative samples
-python3 -m src.plot.uncertainty_heatmaps --model_dir trained_models/isic18/ --output_file plots/isic18_uncertainties.png
+# Qualitative samples isic18
+python3 -m src.plot.isic18_samples --model_dir trained_models/isic18/ --output_file plots/isic18_samples.png plots/isic18_samples.pdf
+pdfcrop plots/isic18_samples.pdf plots/isic18_samples.pdf

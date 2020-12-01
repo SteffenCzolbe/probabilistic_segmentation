@@ -20,7 +20,7 @@ def load_sample(datamodule, idx, device):
     return x.unsqueeze(0), ys[0].unsqueeze(0)
 
 
-def add_edge(img, width=5, c=0):
+def add_edge(img, width=4, c=0):
     # adds a black frame to the image
 
     # top
@@ -45,7 +45,7 @@ def make_fig(args, img_cnt):
         rows=img_cnt,
         cols=1 + len(models),
         title=None,
-        figsize=(3.1, 4),
+        figsize=(6, 8),
         background=True,
     )
     plt.tight_layout()
@@ -77,24 +77,24 @@ def make_fig(args, img_cnt):
             fig.plot_overlay(
                 row, 1 + col, add_edge(uncertainty[0], c=1), alpha=1, vmin=0, vmax=1, cmap='Greys')
 
-            # plot model prediction outline
-            fig.plot_contour(row, 1 + col, y_pred[0], contour_class=1, width=2, rgba=color_model
-                             )
-
             # plot gt seg outline
             fig.plot_contour(row, 1 + col, y[0], contour_class=1, width=2, rgba=color_gt
                              )
 
+            # plot model prediction outline
+            fig.plot_contour(row, 1 + col, y_pred[0], contour_class=1, width=2, rgba=color_model
+                             )
+
     # set labels
     fig.axs[0, 0].title.set_text('Image')
-    fig.axs[0, 0].title.set_fontsize(6)
+    fig.axs[0, 0].title.set_fontsize(10)
     for i, model in enumerate(models):
         fig.axs[0, 1 + i].title.set_text(model.model_name())
-        fig.axs[0, 1 + i].title.set_fontsize(6)
+        fig.axs[0, 1 + i].title.set_fontsize(10)
 
     # adjust spacing
     plt.subplots_adjust(left=0, bottom=0, right=1,
-                        top=0.9, wspace=0.1, hspace=0.1)
+                        top=0.9, wspace=0.06, hspace=0.06)
 
     for f in args.output_file:
         fig.save(f, close=False)
