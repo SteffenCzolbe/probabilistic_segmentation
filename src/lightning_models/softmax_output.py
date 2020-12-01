@@ -93,7 +93,7 @@ class SoftmaxOutput(pl.LightningModule):
 
     @staticmethod
     def model_name():
-        return "Softmax Output"
+        return "U-Net"
 
     @staticmethod
     def model_shortname():
