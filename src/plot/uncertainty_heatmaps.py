@@ -20,6 +20,21 @@ def load_sample(datamodule, idx, device):
     return x.unsqueeze(0), ys[0].unsqueeze(0)
 
 
+def add_edge(img, width=5, c=0):
+    # adds a black frame to the image
+
+    # top
+    img[:, :width, :] = c
+    # bottom
+    img[:, -width:, :] = c
+    # left
+    img[:, :, :width] = c
+    # right
+    img[:, :, -width:] = c
+
+    return img
+
+
 def make_fig(args, img_cnt):
     # set up
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -30,7 +45,7 @@ def make_fig(args, img_cnt):
         rows=img_cnt,
         cols=1 + len(models),
         title=None,
-        figsize=(3.5, 4),
+        figsize=(3.1, 4),
         background=True,
     )
     plt.tight_layout()
@@ -45,7 +60,7 @@ def make_fig(args, img_cnt):
         x, y = load_sample(datamodule, idx=img_idx, device=device)
 
         # plot image
-        fig.plot_img(row, 0, x[0], vmin=0, vmax=1)
+        fig.plot_img(row, 0, add_edge(x[0]), vmin=0, vmax=1)
         # plot gt seg outline
         fig.plot_contour(row, 0, y[0],
                          contour_class=1, width=2, rgba=color_gt)
@@ -60,7 +75,7 @@ def make_fig(args, img_cnt):
 
             # plot uncertainty heatmap
             fig.plot_overlay(
-                row, 1 + col, uncertainty[0], alpha=1, vmin=0, vmax=1, cmap='Greys')
+                row, 1 + col, add_edge(uncertainty[0], c=1), alpha=1, vmin=0, vmax=1, cmap='Greys')
 
             # plot model prediction outline
             fig.plot_contour(row, 1 + col, y_pred[0], contour_class=1, width=2, rgba=color_model
@@ -77,7 +92,12 @@ def make_fig(args, img_cnt):
         fig.axs[0, 1 + i].title.set_text(model.model_name())
         fig.axs[0, 1 + i].title.set_fontsize(6)
 
-    fig.save(args.output_file)
+    # adjust spacing
+    plt.subplots_adjust(left=0, bottom=0, right=1,
+                        top=0.9, wspace=0.1, hspace=0.1)
+
+    for f in args.output_file:
+        fig.save(f, close=False)
 
 
 def order_model_checkpoints(cktps):
@@ -100,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--model_dir', type=str, help='Directory of trained models.')
     parser.add_argument(
-        '--output_file', type=str, help='File to save the results in.')
+        '--output_file', type=str, nargs='+', help='File to save the results in.')
     args = parser.parse_args()
 
     model_checkpoints = glob.glob(os.path.join(args.model_dir, '*'))
