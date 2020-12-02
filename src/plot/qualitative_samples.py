@@ -13,11 +13,11 @@ from matplotlib import pyplot as plt
 
 
 def set_up_figure(model_cnt, x, ys):
-    cols = 8
+    cols = 6
     fig = Fig(
         rows=5,
         cols=cols,
-        figsize=(3, 2),
+        figsize=(4, 4),
         background=True,
     )
     # image goes top left
@@ -40,7 +40,7 @@ def predict(model, x):
     with torch.no_grad():
         predictions = []
         # draw 8 predictions
-        for i in range(8):
+        for i in range(6):
             pred = model.sample_prediction(x.unsqueeze(0)).squeeze(0)
             predictions.append(pred)
 
@@ -59,7 +59,7 @@ def plot_predictions(fig, row, predictions,):
 
 
 def make_fig(args):
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = 'cpu'  # 'cuda' if torch.cuda.is_available() else 'cpu'
     models = [util.load_model_from_checkpoint(ckpt).to(
         device) for ckpt in args.model_checkpoints]
     datamodule = util.load_datamodule_for_model(
