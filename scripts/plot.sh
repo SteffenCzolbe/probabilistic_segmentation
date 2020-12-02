@@ -1,3 +1,6 @@
+# print human-readable metrics
+python3 -m src.plot.metrics_to_csv
+
 # Draw samples for qualitative evaluation
 python3 -m src.plot.viz_predictions --model_dir trained_models/lidc --output_file plots/lidc_predictions.png
 python3 -m src.plot.viz_predictions --model_dir trained_models/isic18 --output_file plots/isic18_predictions.png
