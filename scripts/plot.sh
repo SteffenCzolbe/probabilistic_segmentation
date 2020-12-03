@@ -6,7 +6,8 @@ python3 -m src.plot.viz_predictions --model_dir trained_models/lidc --output_fil
 python3 -m src.plot.viz_predictions --model_dir trained_models/isic18 --output_file plots/isic18_predictions.png
 
 # GED-plot
-python3 -m src.plot.ged_plot --dataset lidc --output_file plots/lidc_ged.png plots/lidc_ged.pdf
+python3 -m src.plot.ged_plot --dataset lidc --output_file plots/lidc_ged.png plots/lidc_ged.pdf --legend
+pdfcrop plots/lidc_ged.pdf plots/lidc_ged.pdf
 
 # SoftDice loss on heatmaps plot
 python3 -m src.plot.soft_dice_plot --dataset lidc --output_file plots/lidc_soft_dice.png plots/lidc_soft_dice.pdf
@@ -16,11 +17,14 @@ python3 -m src.plot.correlation --dataset lidc --output_file plots/lidc_segerr_u
 python3 -m src.plot.correlation --dataset isic18 --output_file plots/isic18_segerr_uncert_correlation.png plots/isic18_segerr_uncert_correlation.pdf
 
 # Uncertainty - Categorical
-python3 -m src.plot.uncertainty_by_condition --dataset lidc --output_file plots/lidc_uncertainty_by_condition.png plots/lidc_uncertainty_by_condition.pdf
+python3 -m src.plot.uncertainty_by_condition --dataset lidc --legend --output_file plots/lidc_uncertainty_by_condition.png plots/lidc_uncertainty_by_condition.pdf
+pdfcrop plots/lidc_uncertainty_by_condition.pdf plots/lidc_uncertainty_by_condition.pdf
 python3 -m src.plot.uncertainty_by_condition --dataset isic18 --output_file plots/isic18_uncertainty_by_condition.png plots/isic18_uncertainty_by_condition.pdf
+pdfcrop plots/isic18_uncertainty_by_condition.pdf plots/isic18_uncertainty_by_condition.pdf
 
 # Model uncertainty vs annotator uncertainty
 python3 -m src.plot.model_vs_annotator_uncertainty --test_results_file plots/experiment_results.pickl --output_file plots/lidc_uncertainty_correl.png plots/lidc_uncertainty_correl.pdf
+pdfcrop plots/lidc_uncertainty_correl.pdf plots/lidc_uncertainty_correl.pdf
 
 # Teaser image (to be cleaned up in inkscape)
 python3 -m src.plot.isic18_sample_teaser --model_path trained_models/isic18/softm/ --samples 16 --output_folder plots/isic18_sample_teaser

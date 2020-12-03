@@ -50,26 +50,34 @@ def main(args):
     df_data, df_median = load_data(args.test_results_file)
     sns.set_theme(style="whitegrid")
 
+    # set-up figure
+    fig, ax = plt.subplots(figsize=(5*0.9, 4*0.9))
+
     # plot datapoints
-    ax = sns.stripplot(x='annotator_agreement', y="model_uncertainty", hue="model",
-                       data=df_data, palette="Set2", dodge=True,
-                       size=1, jitter=0.2)
+    sns.stripplot(x='annotator_agreement', y="model_uncertainty", hue="model",
+                  data=df_data, palette="Set2", dodge=True,
+                  size=1, jitter=0.2, ax=ax)
 
     # plot means on top
-    ax = sns.stripplot(x='annotator_agreement', y="model_uncertainty", hue="model",
-                       data=df_median, palette="Set2", dodge=True,
-                       size=9, jitter=0, edgecolor='black', ax=ax, linewidth=1)
+    sns.stripplot(x='annotator_agreement', y="model_uncertainty", hue="model",
+                  data=df_median, palette="Set2", dodge=True,
+                  size=8, jitter=0, edgecolor='black', ax=ax, linewidth=1)
 
-    # Get the handles and labels
-    handles, labels = ax.get_legend_handles_labels()
+    if args.legend:
+        # Get the handles and labels
+        handles, labels = ax.get_legend_handles_labels()
 
-    # When creating the legend, dont use duplicate entries
-    n = len(handles) // 2
-    l = plt.legend(handles[:n], labels[:n])
+        # When creating the legend, dont use duplicate entries
+        n = len(handles) // 2
+        l = plt.legend(handles[:n], labels[:n])
+    else:
+        ax.get_legend().remove()
 
     # y-label
     ax.set_xlabel('Expert Annotators')
     ax.set_ylabel('Model Uncertainty $H(\hat{p})$')
+    # add more space for y-label
+    plt.gcf().subplots_adjust(left=0.17, right=0.95, bottom=0.15)
 
     # save
     fig = ax.get_figure()
@@ -83,5 +91,10 @@ if __name__ == "__main__":
         '--test_results_file', type=str, default='plots/experiment_results.pickl', help='File with test results.')
     parser.add_argument(
         '--output_file', type=str, nargs="+", help='File to save the results in.')
+    parser.add_argument(
+        "--legend",
+        action="store_true",
+        help="Set to add a lagend to the plot.",
+    )
     args = parser.parse_args()
     main(args)
