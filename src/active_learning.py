@@ -55,7 +55,6 @@ def main():
 
     class ResetTrainer:
         def __init__(self, strategy, iter):
-
             self.checkpointing_callback = pl.callbacks.ModelCheckpoint(
                 monitor="val/loss", mode="min", verbose=False
             )
@@ -72,8 +71,8 @@ def main():
                 replace_sampler_ddp=False,
                 logger=pl.loggers.TensorBoardLogger(
                     save_dir=os.getcwd(),
-                    name=f"active_logs/{args.model}/{strategy}",
-                    version=f"{strategy}_{iter}",
+                    name=f"active_logs/{args.model}/{args.dataset}/{strategy}",
+                    version=f"{iter}",
                 ),
             )
 
@@ -83,7 +82,7 @@ def main():
     dataset = util.load_damodule(args.dataset, batch_size=args.batch_size)
     args.data_dims = dataset.dims
     args.data_classes = dataset.classes
-    dataset.num_workers = 32
+    dataset.num_workers = 56
 
     # ------------
     # active_learning
@@ -102,20 +101,22 @@ def main():
             mask = torch.randint(size_Q, size=(50,)).tolist()
             dataset.sampler = mask
         trainer = ResetTrainer(strategy, 0).trainer
+        model = model_cls(args)
         trainer.fit(model, dataset)
         test[strategy].append(trainer.test()[0]["test/loss"])
         test["mask_" + strategy] = mask
         for i in range(args.num_iters):
             print(f"{strategy}************{i+1}/{args.num_iters}***********")
+           
             with torch.no_grad():
                 if (i + 1) % 10 == 0:
                     torch.save(
                         test[strategy],
-                        f"active_logs/loss_{args.model}_{args.dataset}_{strategy}_{i+1}.pt",
+                        f"active_logs/{args.model}/{args.dataset}/{strategy}/loss_{i+1}.pt",
                     )
                     torch.save(
                         test["mask_" + strategy],
-                        f"active_logs/mask_{args.model}_{args.dataset}_{strategy}_{i+1}.pt",
+                        f"active_logs/{args.model}/{args.dataset}/{strategy}/mask_{i+1}.pt",
                     )
 
                 if strategy == "random":
@@ -131,10 +132,11 @@ def main():
                             model.pixel_wise_uncertainty(x).sum(dim=(1, 2, 3))
                         )
                     output_entropy = torch.cat(output_entropy)
-                    next_query = int(torch.argmax(output_entropy))
+                    next_query = torch.argsort(output_entropy)[-5:].tolist()
                     mask.append(next_query)
                 dataset.sampler = mask
             trainer = ResetTrainer(strategy, i + 1).trainer
+            model = model_cls(args)
             trainer.fit(model, dataset)
             test[strategy].append(trainer.test()[0]["test/loss"])
             test["mask_" + strategy].append(next_query)
