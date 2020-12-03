@@ -1,3 +1,6 @@
+# print human-readable metrics
+python3 -m src.plot.metrics_to_csv
+
 # Draw samples for qualitative evaluation
 python3 -m src.plot.viz_predictions --model_dir trained_models/lidc --output_file plots/lidc_predictions.png
 python3 -m src.plot.viz_predictions --model_dir trained_models/isic18 --output_file plots/isic18_predictions.png
@@ -23,7 +26,7 @@ python3 -m src.plot.model_vs_annotator_uncertainty --test_results_file plots/exp
 python3 -m src.plot.isic18_sample_teaser --model_path trained_models/isic18/softm/ --samples 16 --output_folder plots/isic18_sample_teaser
 
 # Qualitative uncertainty
-python3 -m src.plot.qualitative_uncertainty --output_file plots/qualitative_uncertainty.png plots/qualitative_uncertainty.pdf
+python3 -m src.plot.qualitative_uncertainty --images_each 2 --output_file plots/qualitative_uncertainty.png plots/qualitative_uncertainty.pdf
 pdfcrop plots/qualitative_uncertainty.pdf plots/qualitative_uncertainty.pdf
 
 # Qualitative samples isic18

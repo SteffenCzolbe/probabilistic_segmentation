@@ -83,7 +83,7 @@ def make_fig(args):
         rows=args.images_each*2,
         cols=5,
         title=None,
-        figsize=(6, 8),
+        figsize=(6, 5.2),
         background=True,
     )
     plt.tight_layout()
@@ -121,7 +121,7 @@ def make_fig(args):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
-        '--images_each', type=int, default=3, help='Amount of images per dataset')
+        '--images_each', type=int, default=2, help='Amount of images per dataset')
     parser.add_argument(
         '--output_file', type=str, nargs='+', help='File to save the results in.')
     args = parser.parse_args()
