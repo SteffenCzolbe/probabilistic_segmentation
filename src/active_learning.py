@@ -89,22 +89,22 @@ def main():
     # ------------
     model_cls = util.get_model_cls(args.model)
     test = {}
+    start_with = 50
+    num_add = 5
     for strategy in ["random", "output_uncertainty"]:
         pl.seed_everything(1234)
-        model = model_cls(args)
         test[strategy] = []
-        test["mask_" + strategy] = []
         with torch.no_grad():
             device = "cuda" if torch.cuda.is_available() else "cpu"
             dataset.augment = None
             size_Q = len(dataset.train_dataloader().dataset)
-            mask = torch.randint(size_Q, size=(50,)).tolist()
-            dataset.sampler = mask
+            mask = torch.randint(size_Q, size=(start_with,))
+            dataset.sampler = mask.tolist()
         trainer = ResetTrainer(strategy, 0).trainer
         model = model_cls(args)
         trainer.fit(model, dataset)
         test[strategy].append(trainer.test()[0]["test/loss"])
-        test["mask_" + strategy] = mask
+        test["mask_" + strategy] = dataset.sampler
         for i in range(args.num_iters):
             print(f"{strategy}************{i+1}/{args.num_iters}***********")
            
@@ -120,8 +120,8 @@ def main():
                     )
 
                 if strategy == "random":
-                    next_query = int(torch.randint(size_Q, size=(1,)))
-                    mask.append(next_query)
+                    next_query = torch.randint(size_Q, size=(num_add,))
+                    mask = torch.cat((mask, next_query))
                 elif strategy == "output_uncertainty":
                     model.to(device)
                     output_entropy = []
@@ -132,14 +132,15 @@ def main():
                             model.pixel_wise_uncertainty(x).sum(dim=(1, 2, 3))
                         )
                     output_entropy = torch.cat(output_entropy)
-                    next_query = torch.argsort(output_entropy)[-5:].tolist()
-                    mask.append(next_query)
-                dataset.sampler = mask
+                    next_query = torch.argsort(output_entropy)[-num_add:]
+                    mask = mask.to(device)
+                    mask = torch.cat((mask,next_query))
+                dataset.sampler = mask.tolist()
             trainer = ResetTrainer(strategy, i + 1).trainer
             model = model_cls(args)
             trainer.fit(model, dataset)
             test[strategy].append(trainer.test()[0]["test/loss"])
-            test["mask_" + strategy].append(next_query)
+            test["mask_" + strategy] = dataset.sampler
 
     # ------------
     # plot
