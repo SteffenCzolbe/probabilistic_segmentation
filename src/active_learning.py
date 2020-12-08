@@ -48,6 +48,18 @@ def main():
         help="Compute GED etc. metrics in val and test steps.",
     )
 
+    parser.add_argument(
+        "--start_with",
+        type=int,
+        help='How many samples to start active leanring with'
+    )
+
+    parser.add_argument(
+        "--add",
+        type=int,
+        help="How many samples to add after each iteration"
+    )
+
     parser = pl.Trainer.add_argparse_args(parser)
     for model in util.get_supported_models().values():
         parser = model.add_model_specific_args(parser)
@@ -67,7 +79,7 @@ def main():
             )
             self.trainer = pl.Trainer.from_argparse_args(
                 args,
-                callbacks=[self.early_stop_callback],
+                checkpoint_callback=self.checkpointing_callback,
                 replace_sampler_ddp=False,
                 logger=pl.loggers.TensorBoardLogger(
                     save_dir=os.getcwd(),
@@ -82,15 +94,13 @@ def main():
     dataset = util.load_damodule(args.dataset, batch_size=args.batch_size)
     args.data_dims = dataset.dims
     args.data_classes = dataset.classes
-    dataset.num_workers = 56
+    dataset.num_workers = 32
 
     # ------------
     # active_learning
     # ------------
     model_cls = util.get_model_cls(args.model)
     test = {}
-    start_with = 50
-    num_add = 5
     for strategy in ["random", "output_uncertainty"]:
         pl.seed_everything(1234)
         test[strategy] = []
@@ -98,13 +108,12 @@ def main():
             device = "cuda" if torch.cuda.is_available() else "cpu"
             dataset.augment = None
             size_Q = len(dataset.train_dataloader().dataset)
-            mask = torch.randint(size_Q, size=(start_with,))
+            mask = torch.randint(size_Q, size=(args.start_with,))
             dataset.sampler = mask.tolist()
         trainer = ResetTrainer(strategy, 0).trainer
         model = model_cls(args)
         trainer.fit(model, dataset)
         test[strategy].append(trainer.test()[0]["test/loss"])
-        test["mask_" + strategy] = dataset.sampler
         for i in range(args.num_iters):
             print(f"{strategy}************{i+1}/{args.num_iters}***********")
            
@@ -120,7 +129,7 @@ def main():
                     )
 
                 if strategy == "random":
-                    next_query = torch.randint(size_Q, size=(num_add,))
+                    next_query = torch.randint(size_Q, size=(args.add,))
                     mask = torch.cat((mask, next_query))
                 elif strategy == "output_uncertainty":
                     model.to(device)
@@ -132,27 +141,15 @@ def main():
                             model.pixel_wise_uncertainty(x).sum(dim=(1, 2, 3))
                         )
                     output_entropy = torch.cat(output_entropy)
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> de8ddf8e737b4b035f8960ae010bcd11f03d42be
-                    next_query = torch.argsort(output_entropy)[-num_add:]
+                    next_query = torch.argsort(output_entropy)[-args.add:]
                     mask = mask.to(device)
                     mask = torch.cat((mask,next_query))
                 dataset.sampler = mask.tolist()
-<<<<<<< HEAD
-=======
-                    next_query = torch.argsort(output_entropy)[-5:].tolist()
-                    mask.append(next_query)
-                dataset.sampler = mask
->>>>>>> 83d815139316b7a0cdd323a464e372c8c3ce8a7e
-=======
->>>>>>> de8ddf8e737b4b035f8960ae010bcd11f03d42be
             trainer = ResetTrainer(strategy, i + 1).trainer
             model = model_cls(args)
             trainer.fit(model, dataset)
             test[strategy].append(trainer.test()[0]["test/loss"])
-            test["mask_" + strategy] = dataset.sampler
+        test["mask_" + strategy] = dataset.sampler
 
     # ------------
     # plot
