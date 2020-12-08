@@ -40,8 +40,8 @@ class ISIC18DataModule(pl.LightningDataModule):
 
     def train_dataloader(self):
         dataset = ISIC18Dataset(
-            self.data_dir, "train", transform=self.transform, augment=self.augment, sampler=self.sampler, num_workers=self.num_workers)
-        return DataLoader(dataset, batch_size=self.batch_size)
+            self.data_dir, "train", transform=self.transform, augment=self.augment)
+        return DataLoader(dataset, batch_size=self.batch_size, sampler=self.sampler, num_workers=self.num_workers)
 
     def val_dataloader(self):
         dataset = ISIC18Dataset(
@@ -50,8 +50,8 @@ class ISIC18DataModule(pl.LightningDataModule):
 
     def test_dataloader(self):
         dataset = ISIC18Dataset(
-            self.data_dir, "test", transform=self.transform, num_workers=self.num_workers)
-        return DataLoader(dataset, batch_size=self.batch_size)
+            self.data_dir, "test", transform=self.transform)
+        return DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 
 class ISIC18Dataset(Dataset):
