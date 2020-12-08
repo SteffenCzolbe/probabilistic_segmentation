@@ -67,19 +67,19 @@ def main():
 
     class ResetTrainer:
         def __init__(self, strategy, iter):
-            self.checkpointing_callback = pl.callbacks.ModelCheckpoint(
-                monitor="val/loss", mode="min", verbose=False
-            )
-            self.early_stop_callback = pl.callbacks.EarlyStopping(
-                monitor="val/loss",
-                min_delta=0.00,
-                patience=10,
-                verbose=False,
-                mode="min",
-            )
+            #self.checkpointing_callback = pl.callbacks.ModelCheckpoint(
+            #    monitor="val/loss", mode="min", verbose=False
+           # )
+            #self.early_stop_callback = pl.callbacks.EarlyStopping(
+                #monitor="val/loss",
+                #min_delta=0.00,
+               # patience=10,
+              #  verbose=False,
+             #   mode="min",
+            #)
             self.trainer = pl.Trainer.from_argparse_args(
                 args,
-                checkpoint_callback=self.checkpointing_callback,
+                #checkpoint_callback=self.checkpointing_callback,
                 replace_sampler_ddp=False,
                 logger=pl.loggers.TensorBoardLogger(
                     save_dir=os.getcwd(),
@@ -114,19 +114,12 @@ def main():
         model = model_cls(args)
         trainer.fit(model, dataset)
         test[strategy].append(trainer.test()[0]["test/loss"])
+        test["mask_" + strategy] = dataset.sampler
+
         for i in range(args.num_iters):
             print(f"{strategy}************{i+1}/{args.num_iters}***********")
            
-            with torch.no_grad():
-                if (i + 1) % 10 == 0:
-                    torch.save(
-                        test[strategy],
-                        f"/scratch/aasa/active_logs/{args.model}/{args.dataset}/{strategy}/loss_{i+1}.pt",
-                    )
-                    torch.save(
-                        test["mask_" + strategy],
-                        f"/scratch/aasa/active_logs/{args.model}/{args.dataset}/{strategy}/mask_{i+1}.pt",
-                    )
+            with torch.no_grad(): 
 
                 if strategy == "random":
                     next_query = torch.randint(size_Q, size=(args.add,))
@@ -145,12 +138,21 @@ def main():
                     mask = mask.to(device)
                     mask = torch.cat((mask,next_query))
                 dataset.sampler = mask.tolist()
+                test["mask_" + strategy] = dataset.sampler
+                if (i + 1) % 10 == 0:
+                    torch.save(
+                        test[strategy],
+                        f"/scratch/aasa/active_logs/{args.model}/{args.dataset}/{strategy}/loss_{i+1}.pt",
+                    )
+                    torch.save(
+                        test["mask_" + strategy],
+                        f"/scratch/aasa/active_logs/{args.model}/{args.dataset}/{strategy}/mask_{i+1}.pt",
+                    )
             trainer = ResetTrainer(strategy, i + 1).trainer
             model = model_cls(args)
             trainer.fit(model, dataset)
             test[strategy].append(trainer.test()[0]["test/loss"])
-        test["mask_" + strategy] = dataset.sampler
-
+        
     # ------------
     # plot
     # ------------
