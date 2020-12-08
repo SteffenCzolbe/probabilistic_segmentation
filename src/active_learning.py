@@ -132,10 +132,22 @@ def main():
                             model.pixel_wise_uncertainty(x).sum(dim=(1, 2, 3))
                         )
                     output_entropy = torch.cat(output_entropy)
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> de8ddf8e737b4b035f8960ae010bcd11f03d42be
                     next_query = torch.argsort(output_entropy)[-num_add:]
                     mask = mask.to(device)
                     mask = torch.cat((mask,next_query))
                 dataset.sampler = mask.tolist()
+<<<<<<< HEAD
+=======
+                    next_query = torch.argsort(output_entropy)[-5:].tolist()
+                    mask.append(next_query)
+                dataset.sampler = mask
+>>>>>>> 83d815139316b7a0cdd323a464e372c8c3ce8a7e
+=======
+>>>>>>> de8ddf8e737b4b035f8960ae010bcd11f03d42be
             trainer = ResetTrainer(strategy, i + 1).trainer
             model = model_cls(args)
             trainer.fit(model, dataset)
