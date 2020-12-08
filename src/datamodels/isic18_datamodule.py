@@ -25,6 +25,7 @@ class ISIC18DataModule(pl.LightningDataModule):
         self.num_workers = 0
         self.dims = (3, 256, 256)
         self.classes = 2
+        self.sampler = None
         self.augment = RandomAffine()
         self.transform = transforms.Compose([
             transforms.Pad(padding=1, padding_mode='edge'),

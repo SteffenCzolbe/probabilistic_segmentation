@@ -5,6 +5,7 @@ trained_models*
 plots/*/*.png
 plots/*/*.pdf
 plots/experiment_results.pickl
+active_logs
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

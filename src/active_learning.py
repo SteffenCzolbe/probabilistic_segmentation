@@ -60,12 +60,21 @@ def main():
         help="How many samples to add after each iteration"
     )
 
+    parser.add_argument(
+        "--only_save_latest",
+        action="store_true",
+        help="Set to only save latest model"
+    )
+
     parser = pl.Trainer.add_argparse_args(parser)
     for model in util.get_supported_models().values():
         parser = model.add_model_specific_args(parser)
     args = parser.parse_args()
 
     class ResetTrainer:
+        """Class used to re-instantiate the trainer after every epoch
+        """
+
         def __init__(self, strategy, iter):
             #self.checkpointing_callback = pl.callbacks.ModelCheckpoint(
             #    monitor="val/loss", mode="min", verbose=False
@@ -84,7 +93,7 @@ def main():
                 logger=pl.loggers.TensorBoardLogger(
                     save_dir=os.getcwd(),
                     name=f"active_logs/{args.model}/{args.dataset}/{strategy}",
-                    version=f"{iter}",
+                    version='latest' if args.only_save_latest else f"{iter}",
                 ),
             )
 
@@ -101,7 +110,9 @@ def main():
     # ------------
     model_cls = util.get_model_cls(args.model)
     test = {}
+    # perform both random and uncertainty sampling strategies
     for strategy in ["random", "output_uncertainty"]:
+        # initialization
         pl.seed_everything(1234)
         test[strategy] = []
         with torch.no_grad():
@@ -110,16 +121,45 @@ def main():
             size_Q = len(dataset.train_dataloader().dataset)
             mask = torch.randint(size_Q, size=(args.start_with,))
             dataset.sampler = mask.tolist()
+        # initialize trainer
         trainer = ResetTrainer(strategy, 0).trainer
+        # initialize model
         model = model_cls(args)
+        # train first epoch
         trainer.fit(model, dataset)
+        # test and append loss
         test[strategy].append(trainer.test()[0]["test/loss"])
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
         test["mask_" + strategy] = dataset.sampler
 
         for i in range(args.num_iters):
             print(f"{strategy}************{i+1}/{args.num_iters}***********")
            
             with torch.no_grad(): 
+<<<<<<< Updated upstream
+=======
+=======
+
+        # iterate over remaining epochs
+        for i in range(args.num_iters):
+            print(f"{strategy}************{i+1}/{args.num_iters}***********")
+
+            with torch.no_grad():
+                # save progress every 10 active learning epochs
+                if (i + 1) % 10 == 0:
+                    torch.save(
+                        test[strategy],
+                        f"active_logs/{args.model}/{args.dataset}/{strategy}/loss_{i+1}.pt",
+                    )
+                    torch.save(
+                        test["mask_" + strategy],
+                        f"active_logs/{args.model}/{args.dataset}/{strategy}/mask_{i+1}.pt",
+                    )
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 
                 if strategy == "random":
                     next_query = torch.randint(size_Q, size=(args.add,))
@@ -136,8 +176,12 @@ def main():
                     output_entropy = torch.cat(output_entropy)
                     next_query = torch.argsort(output_entropy)[-args.add:]
                     mask = mask.to(device)
-                    mask = torch.cat((mask,next_query))
+                    mask = torch.cat((mask, next_query))
                 dataset.sampler = mask.tolist()
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
                 test["mask_" + strategy] = dataset.sampler
                 if (i + 1) % 10 == 0:
                     torch.save(
@@ -148,7 +192,14 @@ def main():
                         test["mask_" + strategy],
                         f"active_logs/{args.model}/{args.dataset}/{strategy}/mask_{i+1}.pt",
                     )
+<<<<<<< Updated upstream
+=======
+=======
+            # re-initialize trainer
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
             trainer = ResetTrainer(strategy, i + 1).trainer
+            # re-initialize model
             model = model_cls(args)
             trainer.fit(model, dataset)
             test[strategy].append(trainer.test()[0]["test/loss"])
