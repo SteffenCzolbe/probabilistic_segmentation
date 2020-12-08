@@ -21,7 +21,8 @@ class ISIC18DataModule(pl.LightningDataModule):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
-
+        self.sampler = None
+        self.num_workers = 0
         self.dims = (3, 256, 256)
         self.classes = 2
         self.augment = RandomAffine()
@@ -39,17 +40,17 @@ class ISIC18DataModule(pl.LightningDataModule):
 
     def train_dataloader(self):
         dataset = ISIC18Dataset(
-            self.data_dir, "train", transform=self.transform, augment=self.augment)
+            self.data_dir, "train", transform=self.transform, augment=self.augment, sampler=self.sampler, num_workers=self.num_workers)
         return DataLoader(dataset, batch_size=self.batch_size)
 
     def val_dataloader(self):
         dataset = ISIC18Dataset(
             self.data_dir, "val", transform=self.transform)
-        return DataLoader(dataset, batch_size=self.batch_size)
+        return DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
         dataset = ISIC18Dataset(
-            self.data_dir, "test", transform=self.transform)
+            self.data_dir, "test", transform=self.transform, num_workers=self.num_workers)
         return DataLoader(dataset, batch_size=self.batch_size)
 
 
