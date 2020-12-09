@@ -5,6 +5,9 @@ python3 -m src.plot.metrics_to_csv
 python3 -m src.plot.viz_predictions --model_dir trained_models/lidc --output_file plots/lidc_predictions.png
 python3 -m src.plot.viz_predictions --model_dir trained_models/isic18 --output_file plots/isic18_predictions.png
 
+# Draw multiple samples from the training set for a single model
+python -m src.plot.viz_active --model_dir trained_models/isic18 --output_file plots/softm_samples_isic.png --tr_idx 32 1 100 42
+
 # GED-plot
 python3 -m src.plot.ged_plot --dataset lidc --output_file plots/lidc_ged.png plots/lidc_ged.pdf --legend
 pdfcrop plots/lidc_ged.pdf plots/lidc_ged.pdf
