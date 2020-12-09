@@ -23,8 +23,14 @@ def set_up_figure(model_cnt, sample):
     return fig
 
 
-def load_sample(datamodule, idx, device):
+def load_test_sample(datamodule, idx, device):
     dl = datamodule.test_dataloader()
+    img = dl.dataset[idx]
+    return util.to_device(img, device)
+
+def load_train_sample(datamodule, idx, device):
+    datamodule.augment = False
+    dl = datamodule.train_dataloader()
     img = dl.dataset[idx]
     return util.to_device(img, device)
 
@@ -63,18 +69,17 @@ def plot_predictions(fig, row, predictions, model_name):
         )
 
 
-def make_fig(model_checkpoints, output_file):
+def make_fig(model_checkpoint, output_file, indices):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    indices = [2,4]
-    model = util.load_model_from_checkpoint(model_checkpoint).to(device)
+    model = util.load_model_from_checkpoint(model_checkpoint[0]).to(device)
     datamodule = util.load_datamodule_for_model(model, batch_size=1)
 
-    for row, idx in enumerate(indices)
-        sample = load_sample(datamodule, idx=0, device=device)
+    for row, idx in enumerate(indices):
+        sample = load_train_sample(datamodule, idx=idx, device=device)
         if row == 0:
             fig = set_up_figure(len(indices), sample)
         predictions = predict(model, sample[0])
-        plot_predictions(fig, row + 1, predictions, model.model_shortname())
+        plot_predictions(fig, row + 1, predictions, str(idx))
 
     os.makedirs("./plots/", exist_ok=True)
     fig.save(output_file)
@@ -86,6 +91,10 @@ if __name__ == "__main__":
         '--model_dir', type=str, help='Directory of trained models.')
     parser.add_argument(
         '--output_file', type=str, help='File to save the results in.')
+    parser.add_argument(
+        '--tr_idx', type=int, nargs='+', help='Training indices to plot.'
+    )
+    
     args = parser.parse_args()
-    model_checkpoints = glob.glob(os.path.join(args.model_dir, '*'))
-    make_fig(model_checkpoints, args.output_file)
+    model_checkpoint = glob.glob(os.path.join(args.model_dir, '*'))
+    make_fig(model_checkpoint, args.output_file, args.tr_idx)
