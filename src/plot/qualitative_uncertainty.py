@@ -35,19 +35,19 @@ def add_edge(img, width=2, c=0):
     return img
 
 
-def plot_row(fig, row, img_idx, device, models, edge_width, color_gt, color_model):
+def plot_col(fig, col, img_idx, device, models, edge_width, color_gt, color_model):
     datamodule = util.load_datamodule_for_model(models[0], batch_size=1)
     x, ys = load_sample(datamodule, idx=img_idx, device=device)
     y_mean = torch.stack(ys).float().mean(dim=0).round().long()
 
     # plot image
-    fig.plot_img(row, 0, add_edge(x[0], width=edge_width), vmin=0, vmax=1)
+    fig.plot_img(0, col, add_edge(x[0], width=edge_width), vmin=0, vmax=1)
     # plot gt seg outline
-    fig.plot_contour(row, 0, y_mean[0],
+    fig.plot_contour(0, col, y_mean[0],
                      contour_class=1, width=2, rgba=color_gt)
 
     # plot model predictions
-    for col, model in enumerate(models):
+    for row, model in enumerate(models):
         pl.seed_everything(42)
         with torch.no_grad():
             p = model.pixel_wise_probabaility(x, sample_cnt=16)
@@ -56,14 +56,14 @@ def plot_row(fig, row, img_idx, device, models, edge_width, color_gt, color_mode
 
         # plot uncertainty heatmap
         fig.plot_overlay(
-            row, 1 + col, add_edge(uncertainty[0], c=1, width=edge_width), alpha=1, vmin=0, vmax=1, cmap='Greys')
+            row + 1, col, add_edge(uncertainty[0], c=1, width=edge_width), alpha=1, vmin=0, vmax=1, cmap='Greys')
 
         # plot gt seg outline
         fig.plot_contour(
-            row, 1 + col, y_mean[0], contour_class=1, width=2, rgba=color_gt)
+            row + 1, col, y_mean[0], contour_class=1, width=2, rgba=color_gt)
 
         # plot model prediction outline
-        fig.plot_contour(row, 1 + col, y_pred_mean[0], contour_class=1, width=2, rgba=color_model
+        fig.plot_contour(row + 1, col, y_pred_mean[0], contour_class=1, width=2, rgba=color_model
                          )
 
 
@@ -80,10 +80,10 @@ def make_fig(args):
         device) for ckpt in lidc_model_checkpoints]
 
     fig = Fig(
-        rows=args.images_each*2,
-        cols=5,
+        rows=5,
+        cols=args.images_each*2,
         title=None,
-        figsize=(6, 5.2),
+        figsize=(5, 3),
         background=True,
     )
     plt.tight_layout()
@@ -95,24 +95,17 @@ def make_fig(args):
 
     # plot isic dataset
     for i in range(args.images_each):
-        plot_row(fig, i, img_indices[i], device, isic_models,
+        plot_col(fig, i, img_indices[i], device, isic_models,
                  4, color_gt, color_model)
 
     # plot lidc dataset
     for i in range(args.images_each, args.images_each*2):
-        plot_row(fig, i, img_indices[i], device, lidc_models,
+        plot_col(fig, i, img_indices[i], device, lidc_models,
                  2, color_gt, color_model)
-
-    # set labels
-    fig.axs[0, 0].title.set_text('Image')
-    fig.axs[0, 0].title.set_fontsize(10)
-    for i, model in enumerate(isic_models):
-        fig.axs[0, 1 + i].title.set_text(model.model_name())
-        fig.axs[0, 1 + i].title.set_fontsize(10)
 
     # adjust spacing
     plt.subplots_adjust(left=0, bottom=0, right=1,
-                        top=0.9, wspace=0.06, hspace=0.06)
+                        top=1., wspace=0.06, hspace=0.06)
 
     for f in args.output_file:
         fig.save(f, close=False)
