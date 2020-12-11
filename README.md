@@ -1,8 +1,10 @@
-# probabalistic_segmentation
+# Is segmentation uncertainty useful?
+
+## Anonymous, 2020
 
 # Setup
 
-Set-up vidual environment and install dependencies
+Set-up virtual environment and install dependencies
 
 ```
 ./scripts/set_up_and_install.sh
@@ -23,7 +25,7 @@ Eg:
 mv lightning_logs/version_0 trained_models/lidc/softm
 ```
 
-# Test and plot
+# Test the models and generate figures of the paper
 
 ```
 ./scripts/test.sh
