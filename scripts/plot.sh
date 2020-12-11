@@ -33,7 +33,7 @@ pdfcrop plots/lidc_uncertainty_correl.pdf plots/lidc_uncertainty_correl.pdf
 python3 -m src.plot.isic18_sample_teaser --model_path trained_models/isic18/softm/ --samples 16 --output_folder plots/isic18_sample_teaser
 
 # Qualitative uncertainty
-python3 -m src.plot.qualitative_uncertainty --images_each 2 --output_file plots/qualitative_uncertainty.png plots/qualitative_uncertainty.pdf
+python3 -m src.plot.qualitative_uncertainty --images_each 4 --output_file plots/qualitative_uncertainty.png plots/qualitative_uncertainty.pdf
 pdfcrop plots/qualitative_uncertainty.pdf plots/qualitative_uncertainty.pdf
 
 # Qualitative samples isic18
