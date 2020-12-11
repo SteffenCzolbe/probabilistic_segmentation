@@ -28,7 +28,7 @@ def main(args):
 
     # print
     df = pd.DataFrame(data)
-    df.to_csv(args.output_file, sep=';', index=False, header=True)
+    df.to_csv(args.output_file, sep=',', index=False, header=True)
 
 
 if __name__ == "__main__":
