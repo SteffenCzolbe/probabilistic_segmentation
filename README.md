@@ -1,33 +1,58 @@
 # Is segmentation uncertainty useful?
 
-## Anonymous, 2020
+Steffen Czolbe*, Kasra Arnavaz*, Oswin Krause, Aasa Feragen (\*shared first authors), IPMI 2021
 
-# Setup
+[[IPMI 2021 paper]](link) [[arxiv paper]](link)
 
-Set-up virtual environment and install dependencies
+This repository contains all experiments presented in the paper, the code used to generate the figures, and instructions and scripts to re-produce all results. Implementation in the deep-learning framework pytorch. The steps for reproduction listed here are tested on Ubuntu using pip, but can be modified to work on other operating systems and package managers as well.
+
+# Reproduce Experiments
+
+This section gives a short overview of how to reproduce the experiments presented in the paper. Most steps have a script present in the `scripts/` subdirectory. Training logs are written into a directory `lightning_logs/<run no.>`. Each run contains checkpoint files, event logs tracking various training and validation metrics, and a `hparams.yaml` file containing all the hyperparameters of the run. All logs can be easily monitored via `tensorboard --logdir lightning_logs/`.
+
+## Dependencies
+
+All dependencies are listed the the file `requirements.txt`. You can set-up virtual environment and install dependencies with
 
 ```
 ./scripts/set_up_and_install.sh
 ```
 
-# Train models
+## Data
 
-Train all models and benchmark them on the test set.
+Download the datasets by running
+
+```
+./scripts/download_data.sh
+```
+
+This will downoad the isic18 and lidc datasets and unpack them to `./data/`
+
+## Train probabilistic segmentation models
+
+To train all 4 models on both datasets (=8 models total), with pre-tuned hyperparameters, execute the script:
 
 ```
 ./scripts/train.sh
 ```
 
-the output will be written to the directory `lightning_logs`. Cope-paste the model output into the `trained_models/<dataset>` diretory from here.
-Eg:
+During training, logs and checkpoints will be written to `lightning_logs/<run no.>`. To save the trained weights, and allow the evaluation and creating of figures to read the trained models, it is necessary to manually copy the trained model from the `lightning_logs/<run no.>/` directory to the corresponding directory `trained_models/<dataset>/<model abbrev.>/`. Valid values for `dataset` are `lidc`, `isic18`. Valid values for `model abbrev.` are `softm`, `ensemble`, `mcdropout`, `punet`. Example:
 
 ```
 mv lightning_logs/version_0 trained_models/lidc/softm
 ```
 
-# Test the models and generate figures of the paper
+## Test the models and generate figures of the paper
+
+To generate the figures present in the paper, the models have to be tested first. During the test, various metrics will be recorded. Afterwards, these can be plotted. Execute:
 
 ```
 ./scripts/test.sh
 ./scripts/plot.sh
 ```
+
+Figures will be written to the `plots/` directory.
+
+## Run active-learning experiment
+
+TBA
