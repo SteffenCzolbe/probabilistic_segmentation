@@ -16,8 +16,8 @@ def load_data(test_results_file):
     data = defaultdict(list)
     median = defaultdict(list)
     for model in models:
-        model_uncert = test_results['lidc'][model]['per_sample']["test/model_uncertainty"]
-        annot_uncert = test_results['lidc'][model]['per_sample']["test/annotator_uncertainty"]
+        model_uncert = np.array(test_results['lidc'][model]['per_sample']["test/model_uncertainty"]).flatten()
+        annot_uncert = np.array(test_results['lidc'][model]['per_sample']["test/annotator_uncertainty"]).flatten()
 
         idx_agree = annot_uncert <= 0.
         idx_mostly_agree = (annot_uncert > 0.) & (annot_uncert < 1.)

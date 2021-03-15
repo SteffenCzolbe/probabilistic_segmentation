@@ -9,6 +9,7 @@ import os
 import pickle
 from tqdm import tqdm
 from collections import defaultdict
+import numpy as np
 
 
 def cli_main():
@@ -38,9 +39,11 @@ def cli_main():
     # file
     # ------------
     if os.path.isfile(args.file):
+        print('Loading existing result file')
         with open(args.file, 'rb') as f:
             test_results = pickle.load(f)
     else:
+        print('Creating new result file')
         test_results = {}
 
     if dataset not in test_results:
@@ -68,11 +71,15 @@ def cli_main():
         model.to(device)
         model.eval()
         metrics = defaultdict(list)
+        pixel_metrics = defaultdict(list)
         for i, (x, ys) in enumerate(tqdm(datamodule.test_dataloader(), desc='Collecting sample-individual metrics...')):
             x, ys = util.to_device((x, ys), device)
             assert ys[0].max() <= 1
             y_mean = torch.stack(ys).float().mean(dim=0)
 
+            #
+            # Image-wise metrics
+            #
             for sample_count in [1, 4, 8, 16]:
                 ged, sample_diversity = generalized_energy_distance(
                     model, x, ys, sample_count=sample_count)
@@ -92,40 +99,66 @@ def cli_main():
                 ys[torch.randint(len(ys), ())].float(),
                 reduction='none')) for _ in range(16)]).mean(dim=0)
             metrics["test/uncertainty_seg_error_correl"].append(correl)
-            if i < 3:
-                # record pixel-wise metrics for only a few batchs
-                y_hat = model.sample_prediction(x).flatten()
-                y_consens = torch.stack(ys).sum(dim=0).flatten()
-                model_uncertainty = uncertainty.flatten()
+            
+            #
+            # Pixel-whise metrics
+            #
+            model_uncertainty = uncertainty.cpu().numpy() # model uncertainty values
+            
+            # we sample pixel-wise metrics to preserve memory
+            PIXELS_PER_IMAGE = 1000
+            B = model_uncertainty.shape[0]
+            indices = np.moveaxis(np.indices(model_uncertainty.shape[1:]), 0, -1)
+            indices = indices.reshape((-1, 3))
+            indices = indices[np.random.randint(len(indices), size=PIXELS_PER_IMAGE)]
+            # re-add batch dim
+            #indices = np.concatenate([np.stack([np.insert(i, 0, b) for i in indices]) for b in range(B)])
+            
+            y_hat = model.sample_prediction(x) # model thresholded prediction
+            annotator_sum = torch.stack(ys).sum(dim=0) # sum of annotator votes
+            annotator_cnt = len(ys)
+            model_uncertainty = uncertainty # model uncertainty values
 
-                y_mean = torch.stack(ys).float().mean(dim=0)
-                annot_uncertainty = util.binary_entropy(y_mean).flatten()
+            y_mean = torch.stack(ys).float().mean(dim=0)
+            annot_uncertainty = util.binary_entropy(y_mean) # annotator uncertainty
 
-                annotators = len(ys)
-                # record conditional uncetainty only if the is consensus
-                metrics["test/tp_uncertainty"].append(
-                    model_uncertainty[(y_hat == 1) & (y_consens == annotators)])
-                metrics["test/fp_uncertainty"].append(
-                    model_uncertainty[(y_hat == 1) & (y_consens == 0)])
-                metrics["test/fn_uncertainty"].append(
-                    model_uncertainty[(y_hat == 0) & (y_consens == annotators)])
-                metrics["test/tn_uncertainty"].append(
-                    model_uncertainty[(y_hat == 0) & (y_consens == 0)])
-                metrics["test/model_uncertainty"].append(model_uncertainty)
-                metrics["test/annotator_uncertainty"].append(annot_uncertainty)
+            # record conditional uncetainty only if the is consensus
+            for b in range(B):
+                # iterate over images of the batch
+                # sample pixels by indices
+                idx = torch.tensor([[b]+list(i) for i in indices])
+                y_hat_subsampled = index_select(y_hat, idx)
+                annotator_sum_subsampled = index_select(annotator_sum, idx)
+                model_uncertainty_subsampled = index_select(model_uncertainty, idx)
+                annot_uncertainty_subsampled = index_select(annot_uncertainty, idx)
+                pixel_metrics["test/tp_uncertainty"].append(
+                    model_uncertainty_subsampled[(y_hat_subsampled == 1) & (annotator_sum_subsampled == annotator_cnt)].cpu().tolist())
+                pixel_metrics["test/fp_uncertainty"].append(
+                    model_uncertainty_subsampled[(y_hat_subsampled == 1) & (annotator_sum_subsampled == 0)].cpu().tolist())
+                pixel_metrics["test/fn_uncertainty"].append(
+                    model_uncertainty_subsampled[(y_hat_subsampled == 0) & (annotator_sum_subsampled == annotator_cnt)].cpu().tolist())
+                pixel_metrics["test/tn_uncertainty"].append(
+                    model_uncertainty_subsampled[(y_hat_subsampled == 0) & (annotator_sum_subsampled == 0)].cpu().tolist())
+                pixel_metrics["test/model_uncertainty"].append(model_uncertainty_subsampled.cpu().tolist())
+                pixel_metrics["test/annotator_uncertainty"].append(annot_uncertainty_subsampled.cpu().tolist())
+                pixel_metrics["test/is_prediction_correct"].append((y_hat_subsampled == (annotator_sum_subsampled+2)//4).tolist())
 
     # map metrics into lists of floats
     test_results[dataset][model.model_shortname()]['per_sample'] = {}
     for k in metrics:
         test_results[dataset][model.model_shortname()]['per_sample'][k] = torch.cat(
             metrics[k]).cpu().numpy()
+    for k in pixel_metrics:
+        test_results[dataset][model.model_shortname()]['per_sample'][k] = pixel_metrics[k]
 
     # ------------
     # save results
     # ------------
     with open(args.file, 'wb') as f:
         pickle.dump(test_results, f)
-
+        
+def index_select(tensor, idx):
+    return torch.tensor([tensor[tuple(i)] for i in idx])
 
 if __name__ == '__main__':
     cli_main()
