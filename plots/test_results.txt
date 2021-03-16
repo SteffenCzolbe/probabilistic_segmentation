@@ -1,13 +1,13 @@
 
 correlation model uncertainty with error
-lidc/softm -0.40458031909655295 0.0
-lidc/ensemble -0.45141274631734474 0.0
-lidc/mcdropout -0.5948221330232715 0.0
-lidc/punet -0.5246469410774962 0.0
+lidc/softm -0.40458031909655656 0.0
+lidc/ensemble -0.4514127463173492 0.0
+lidc/mcdropout -0.5948221330232725 0.0
+lidc/punet -0.5246469410774982 0.0
 isic18/softm -0.38027383546248833 0.0
-isic18/ensemble -0.4108203793478568 0.0
-isic18/mcdropout -0.35352405919708785 0.0
-isic18/punet -0.42007268890262384 0.0
+isic18/ensemble -0.41082037934785665 0.0
+isic18/mcdropout -0.35352405919708796 0.0
+isic18/punet -0.4200726889026238 0.0
 
 ged, p-values, each pair ged(model1) < ged(model2)
 lidc/softm/ensemble 1.0

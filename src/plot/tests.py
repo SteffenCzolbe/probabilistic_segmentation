@@ -69,7 +69,7 @@ def load_data(test_results_file):
 if __name__ == "__main__":
     
     # load data  into pandas dataframes
-    data_samples, data_class, data_images = load_data('experiment_results.pickl')
+    data_samples, data_class, data_images = load_data('./plots/experiment_results.pickl')
     # with open('frames.pickl', 'wb') as f:
     #     pickle.dump((data_samples, data_class, data_images),f)
     #with open('frames.pickl', 'rb') as f:
