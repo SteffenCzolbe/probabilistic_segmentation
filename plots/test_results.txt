@@ -1,0 +1,42 @@
+
+correlation model uncertainty with error
+lidc/softm -0.40458031909655295 0.0
+lidc/ensemble -0.45141274631734474 0.0
+lidc/mcdropout -0.5948221330232715 0.0
+lidc/punet -0.5246469410774962 0.0
+isic18/softm -0.38027383546248833 0.0
+isic18/ensemble -0.4108203793478568 0.0
+isic18/mcdropout -0.35352405919708785 0.0
+isic18/punet -0.42007268890262384 0.0
+
+ged, p-values, each pair ged(model1) < ged(model2)
+lidc/softm/ensemble 1.0
+lidc/softm/mcdropout 1.0
+lidc/softm/punet 1.0
+lidc/ensemble/softm 4.500561808620638e-53
+lidc/ensemble/mcdropout 0.9994244714268915
+lidc/ensemble/punet 1.0
+lidc/mcdropout/softm 3.710170256431206e-67
+lidc/mcdropout/ensemble 0.0005755285731084636
+lidc/mcdropout/punet 0.9999999999998497
+lidc/punet/softm 2.5078284397435154e-141
+lidc/punet/ensemble 6.531571904173042e-32
+lidc/punet/mcdropout 1.5033102094663543e-13
+isic18/softm/ensemble 0.9995649611666403
+isic18/softm/mcdropout 0.9999125357934519
+isic18/softm/punet 0.9999994789403428
+isic18/ensemble/softm 0.0004350388333596781
+isic18/ensemble/mcdropout 0.5708450569339356
+isic18/ensemble/punet 0.9489229000885705
+isic18/mcdropout/softm 8.74642065481632e-05
+isic18/mcdropout/ensemble 0.42915494306606433
+isic18/mcdropout/punet 0.9495039412506083
+isic18/punet/softm 5.210596572264518e-07
+isic18/punet/ensemble 0.05107709991142955
+isic18/punet/mcdropout 0.050496058749391705
+
+correlation uncertainty, agreement
+lidc/softm 0.5915073804205174 0.0
+lidc/ensemble 0.6115445557927957 0.0
+lidc/mcdropout 0.4607513488740135 0.0
+lidc/punet 0.5522269450056284 0.0
