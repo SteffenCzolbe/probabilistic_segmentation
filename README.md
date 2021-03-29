@@ -55,4 +55,10 @@ Figures will be written to the `plots/` directory.
 
 ## Run active-learning experiment
 
-TBA
+To run the active leanring on both datasets, execute the script:
+```
+./scripts/run_active.sh
+```
+The important options are `start_with` which is the number of samples initially given to the model; `add` determines how many samples to add every time a model has convereged;  `num_iters` is how many times to repeat this precedure. In the paper, we started with 50 and added 25 each time and repeated for 10 iteration so that in the end the model had seen 300 samples.
+
+Figures will be written to the `plots/` directory.
