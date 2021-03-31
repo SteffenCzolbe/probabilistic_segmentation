@@ -2,6 +2,8 @@
 
 Steffen Czolbe*, Kasra Arnavaz*, Oswin Krause, Aasa Feragen (\*shared first authors), IPMI 2021
 
+[[Paper]](https://arxiv.org/abs/2103.16265)
+
 This repository contains all experiments presented in the paper, the code used to generate the figures, and instructions and scripts to re-produce all results. Implementation in the deep-learning framework pytorch. The steps for reproduction listed here are tested on Ubuntu using pip, but can be modified to work on other operating systems and package managers as well.
 
 # Reproduce Experiments
